@@ -13,11 +13,11 @@ USAGE:        Batch mode: Process all RAW files in current directory:
 
 OPTIONS:
 -a            Turn on  batch mode: All RAW files will be processed.
-			  GNU parallel is used to process as many images at the same time
-			  as CPU cores are available.
+              GNU parallel is used to process as many images at the same time
+              as CPU cores are available.
 
 -d            Desaturate colors, recommended for B/W negatives.
-              If omitted, the TIFF files remain color-profiled (Kodak ProPhoto RGB D65).
+              If omitted, the TIFF files remain color-profiled (sRGB).
               If set, dcraw's TIFF output is converted to 16-bit grayscale,
               with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc).
               Grayscaling saves up to 60% in file size.
