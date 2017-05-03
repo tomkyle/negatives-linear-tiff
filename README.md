@@ -15,7 +15,7 @@ These utilities are used:
 - Install [Homebrew](https://brew.sh/) on your Mac - [Installationsanleitung auf deutsch](https://brew.sh/index_de.html)
 
 
-## Upcoming: Installation with Homebrew
+## Installation with Homebrew
 
 This Homebrew formula is part of the [tomkyle/negatives Homebrew tap](https://github.com/tomkyle/homebrew-negatives). It is recommended to install the tap first. As “tapping” first is not neccessarily needed, you can install the formula directly:
 
