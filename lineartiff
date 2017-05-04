@@ -50,6 +50,11 @@ require iccprofiles
 #  Prerequisites
 # ======================================
 
+
+# --------------------------------------
+# Directories
+# --------------------------------------
+
 # Directory where this script lives in
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPT_NAME=$(basename $0)
@@ -60,16 +65,29 @@ HOMEBREW_OPT_DIR=$(brew --prefix $(basename $0))
 # HOMEBREW_OPT_DIR=$SCRIPT_DIR
 
 
-# Where and what to search.
+# --------------------------------------
+# Search files
+# --------------------------------------
+
+# Files to work on
 # The regex shown here must be suitable for regex find'ing:
 # -iregex '.*\.(nef|raw|cr2)'
 SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+
+# Where to search
 SEARCH_DIR="."
 
+
+# --------------------------------------
+# ICC profiles
+# --------------------------------------
 
 # Default ICC profiles
 GRAY_ICC_PROFILE_PATH=$(iccprofiles gray-linear )
 LINEAR_SRGB_ICC_PROFILE_PATH=$(iccprofiles srgb-linear )
+
+
+
 
 # Default parameters for calling dcraw
 DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
@@ -106,6 +124,11 @@ DCRAW_FLIP_IMAGE="-t 0"
 #    at the moment of the shot
 DCRAW_WHITE_BALANCE="-w"
 
+
+# --------------------------------------
+# Internal use
+# --------------------------------------
+
 # Formatting stuff
 DIVIDER_LINE="------------------------------------------"
 C_WHITE='\033[1;37m'
@@ -118,6 +141,7 @@ NC='\033[0m' # No Color
 LICENSE_FILE="LICENSE"
 USAGE_FILE="USAGE"
 CREDITS_FILE="CREDITS"
+
 
 # ======================================
 #  Examine parameters
