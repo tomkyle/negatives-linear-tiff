@@ -53,6 +53,18 @@ Option | Value | Description
                               
 ## Problems and FAQ
 
+### lineartiff does not find my Raw photos in batch mode.
+
+Not neccessarily your fault. While *dcraw* itself can defacto handle every existing RAW photo file extensions, *lineartiff* uses the *find* command with a regex to get a list of files to work on. So we have a question of “how long is the regex”. — For now, these most-occuring file extensions are implemented in *lineartiff:*
+
+- NEF (Nikon)
+- CR2 (Canon)
+- RAW (Contax, Kodak, Leica, Panasonic)
+
+[Drop me a line](https://github.com/tomkyle/negatives-lineartiff/issues) to “order” your favourite file extension. I'll happily lengthen the regex to your needs :smiley:
+
+
+
 ### Message “mogrify: delegate library support not built-in”
 
 `mogrify: delegate library support not built-in './foobar.tiff' (LCMS) @ warning/profile.c/ProfileImage/837.`
