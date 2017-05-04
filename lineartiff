@@ -60,12 +60,11 @@ HOMEBREW_OPT_DIR=$(brew --prefix $(basename $0))
 # HOMEBREW_OPT_DIR=$SCRIPT_DIR
 
 
-# Where to look
-SEARCH_DIR="."
-
+# Where and what to search.
 # The regex shown here must be suitable for regex find'ing:
 # -iregex '.*\.(nef|raw|cr2)'
 SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+SEARCH_DIR="."
 
 
 # Default ICC profiles
