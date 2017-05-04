@@ -242,7 +242,7 @@ shift $(( OPTIND - 1 ));
 
 
 # ======================================
-#  Batch processing
+#  Batch processing: parameter -a
 # ======================================
 if [ $BATCH_MODE -eq  1 ]; then
 
