@@ -48,7 +48,7 @@ Option | Value | Description
                               
 ## Problems and FAQ
 
-###Message “mogrify: delegate library support not built-in”
+### Message “mogrify: delegate library support not built-in”
 
 `mogrify: delegate library support not built-in './foobar.tiff' (LCMS) @ warning/profile.c/ProfileImage/837.`
 
