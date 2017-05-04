@@ -6,10 +6,10 @@ DESCRIPTION:  Converts RAW files into linear TIFF files.
               - GNU Parallel: Use all CPU cores for maximum speed.
 
 USAGE:        Batch mode: Process all RAW files in current directory:
-              $ processneg -a [OPTIONS]
+              $ lineartiff -a [OPTIONS]
 
               Process one or more RAW file(s):
-              $ processneg [OPTIONS] FILE [other FILE(s)]
+              $ lineartiff [OPTIONS] FILE [other FILE(s)]
 
 OPTIONS:
 -a            Turn on  batch mode: All RAW files will be processed.
