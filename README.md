@@ -8,22 +8,27 @@ These utilities are used:
 - [GNU Parallel:](https://www.gnu.org/software/parallel/) Use all CPU cores for maximum speed
 - [ImageMagick:](https://www.imagemagick.org/script/index.php)  B/W grayscaling, TIFF resizing, ZIP compression
 
+Requirements:
+
+- [Homebrew](https://brew.sh/) Package manager for OS X
+- [tomkyle/homebrew-negatives](https://github.com/tomkyle/homebrew-negatives) Homebrew tap for negatives-related scripts.
+
+## Homebrew Installation (OS X)
 
 
-## Requirements
-
-- Install [Homebrew](https://brew.sh/) on your Mac - [Installationsanleitung auf deutsch](https://brew.sh/index_de.html)
-
-
-## Installation with Homebrew
-
-This Homebrew formula is part of the [tomkyle/negatives Homebrew tap](https://github.com/tomkyle/homebrew-negatives). It is recommended to install the tap first. As “tapping” first is not neccessarily needed, you can install the formula directly:
+The *lineartiff* bash script can be installed by a Homebrew formula, which itself is part of the [tomkyle/homebrew-negatives](https://github.com/tomkyle/homebrew-negatives) tap. 
 
 ```bash
+# Install tap, opt
 $ brew tap tomkyle/negatives
-$ brew install lineartiff
 
-# or directly: 
+# Install formula
+$ brew install lineartiff
+```
+
+As “tapping” first is not neccessarily needed, you can install the formula directly:
+
+```bash
 $ brew install tomkyle/negatives/lineartiff
 ```
 
