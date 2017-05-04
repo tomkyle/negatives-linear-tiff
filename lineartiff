@@ -79,25 +79,34 @@ SEARCH_DIR="."
 
 
 # --------------------------------------
-# ICC profiles
+# Pathes to ICC profiles
 # --------------------------------------
 
-# Default ICC profiles
+# Linear Gamma 1.0 Gray profile
+# Applied when output is converted to Grayscale
 GRAY_ICC_PROFILE_PATH=$(iccprofiles gray-linear )
+
+# Linear Gamma 1.0 sRGB profile
+# Applied when output is NOT converted to Grascale.
+# Replaces the ICC profile dcraw applied.
 LINEAR_SRGB_ICC_PROFILE_PATH=$(iccprofiles srgb-linear )
 
 
 
+# --------------------------------------
+# DCRAW settings
+# --------------------------------------
 
-# Default parameters for calling dcraw
-DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
 
-# Clip highlights method:
+# Clip highlights method
+#
 # -H 0 Clip all highlights to solid white (default).
 # -H 5 as a compromise
 DCRAW_HIGHLIGHTS_VALUE=5
 
+
 # Bayer demosaicing algorithm dcraw should use
+#
 # -q 0  Use high-speed, low-quality bilinear interpolation.
 # -q 1  Variable Number of Gradients (VNG) interpolation.
 # -q 2  Patterned Pixel Grouping (PPG) interpolation.
@@ -107,6 +116,7 @@ DCRAW_BAYER_DEMOSAIC_VALUE=3
 
 
 # dcraw's output colorspace
+#
 # 0   Raw color (unique to each camera)
 # 1   sRGB D65 (default)
 # 2   Adobe RGB (1998) D65
@@ -116,13 +126,26 @@ DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 6   ACES
 DCRAW_COLORSPACE_VALUE=1
 
-# Disable dcraw's image flipping with "-t 0"
+
+# Dcraw's image flipping
+#
+# Disable with "-t 0"
 # Leave blank to flip automatically.
 DCRAW_FLIP_IMAGE="-t 0"
 
+
+# White balance
+#
 # -w White balance according to camera settings
 #    at the moment of the shot
 DCRAW_WHITE_BALANCE="-w"
+
+
+# DCRAW output
+#
+# Default extension of dcraw's TIFF output
+DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
+
 
 
 # --------------------------------------
@@ -147,8 +170,9 @@ CREDITS_FILE="CREDITS"
 #  Examine parameters
 # ======================================
 
-
+# --------------------------------------
 # Output small doc if no parameter given
+# --------------------------------------
 if [ "$#" -eq 0 ]; then
 	if [ -f "${HOMEBREW_OPT_DIR}/${USAGE_FILE}" ]; then
 	   	cat "${HOMEBREW_OPT_DIR}/${USAGE_FILE}"
@@ -167,12 +191,21 @@ if [ "$#" -eq 0 ]; then
 fi
 
 
-# Default values, optionally to be overriden by parameter values
+# --------------------------------------
+# Default parameter values.
+# May be overriden by user.
+# --------------------------------------
+
 BATCH_MODE=0
 VERBOUS_MODE=0
 OUTPUT_DIRECTORY="${PWD}"
 DESATURATE_COLORS=0
 RESIZE_IMAGE=0
+
+
+# --------------------------------------
+# Parse parameters
+# --------------------------------------
 
 while getopts advo:r: option
 do
@@ -275,9 +308,11 @@ if [ $BATCH_MODE -eq  1 ]; then
 	unset OUTPUT_DIRECTORY PARAMS VERBOUS_MODE DESATURATE_COLORS NUMOFIMAGES SEARCH_DIR RESIZE_IMAGE;
 
 
-# ======================================
+
+
+# ================================================
 #  No-batch mode; process file(s) in CLI parameter
-# ======================================
+# ================================================
 else
 
 
