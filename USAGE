@@ -16,16 +16,18 @@ OPTIONS:
               GNU parallel is used to process as many images at the same time
               as CPU cores are available.
 
--d            Desaturate colors, recommended for B/W negatives.
-              If omitted, the TIFF files remain color-profiled (sRGB).
-              If set, dcraw's TIFF output is converted to 16-bit grayscale,
-              with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc).
+-d            Desaturate colors, which is recommended for B/W negatives.
+              Converts dcraw's TIFF output to 16-bit grayscale,
+              applying a linear gamma 1.0 ICC profile (Gray-elle-V4-g10.icc).
               Grayscaling saves up to 60% in file size.
+              If omitted, the TIFF files remain color-profiled (sRGB).
 
 -o path       Output directory. Defaults to current working dir.
 
 -r pixel      Resize larger side to this pixel length, preserving aspect ratio.
 
 -v            Turn on dcraw's verbous mode.
+
+HOMEPAGE:     <https://github.com/tomkyle/negatives-lineartiff>
 
 LICENSE:      CC BY-SA 3.0 <https://creativecommons.org/licenses/by-sa/3.0>
