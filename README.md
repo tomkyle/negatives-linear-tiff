@@ -39,11 +39,11 @@ $ lineartiff [options] [-a | file(s)]
 
 Option | Value | Description
 :------|:------|:------------
--a     | | All images (batch mode). Process any RAW/NEF/CR2 file in working directory.
--d     | | Desaturate colors, recommended for B/W negatives. If omitted, the TIFF files remain color-profiled (sRGB). If set, dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size.
--o     | path  | Output directory. Default is current working dir. Example: `-o results`
--r     | pixel | Resize larger side to this pixel length, preserving aspect ratio. Example: `-r 3000`
--v     |       | Turn on verbous mode
+-a     |       | All images—process any RAW/NEF/CR2 file in working directory, using GNU Parallel.
+-d     |       | Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
+-o     | path  | Output directory — default is current working directory. Example: `-o results`
+-r     | pixel | Resize  image – pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
+-v     |       | Verbous mode — show some more information under way.
 
                               
 ## Problems and FAQ
