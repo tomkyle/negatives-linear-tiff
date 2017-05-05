@@ -6,10 +6,10 @@ DESCRIPTION:  Converts RAW files into linear TIFF files.
               - GNU Parallel: Use all CPU cores for maximum speed.
 
 USAGE:        Batch mode: Process all RAW files in current directory:
-              $ lineartiff -a [OPTIONS]
+              $ linear-tiff -a [OPTIONS]
 
               Process one or more RAW file(s):
-              $ lineartiff [OPTIONS] FILE [other FILE(s)]
+              $ linear-tiff [OPTIONS] FILE [other FILE(s)]
 
 OPTIONS:
 -a            Turn on  batch mode: All RAW files will be processed.
@@ -28,6 +28,6 @@ OPTIONS:
 
 -v            Turn on dcraw's verbous mode.
 
-HOMEPAGE:     <https://github.com/tomkyle/negatives-lineartiff>
+HOMEPAGE:     <https://github.com/tomkyle/negatives-linear-tiff>
 
 LICENSE:      CC BY-SA 3.0 <https://creativecommons.org/licenses/by-sa/3.0>
