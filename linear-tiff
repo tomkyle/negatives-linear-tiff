@@ -345,12 +345,12 @@ function main {
     DCRAW_OPTIONS=""
 
     # Add white balance setting
-    if [ -z "${DCRAW_WHITE_BALANCE}" ]; then
+    if [ ! -z "${DCRAW_WHITE_BALANCE}" ]; then
       DCRAW_OPTIONS="${DCRAW_OPTIONS} ${DCRAW_WHITE_BALANCE}"
     fi;
 
     # Add flip image setting
-    if [ -z "${DCRAW_FLIP_IMAGE}" ]; then
+    if [ ! -z "${DCRAW_FLIP_IMAGE}" ]; then
       DCRAW_OPTIONS="${DCRAW_OPTIONS} ${DCRAW_FLIP_IMAGE}"
     fi;
 
