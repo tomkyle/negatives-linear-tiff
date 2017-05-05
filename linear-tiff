@@ -10,10 +10,11 @@
 #  http://cybercom.net/~dcoffin/dcraw/
 #  http://cybercom.net/~dcoffin/dcraw/dcraw.1.html
 #
-#  ImageMagick
+#  ImageMagick:
 #  http://www.imagemagick.org/script/mogrify.php
+#  http://www.imagemagick.org/script/convert.php
 #
-#  GNU Parallel
+#  GNU Parallel:
 #  https://www.gnu.org/software/parallel/
 #
 # *******************************************************
