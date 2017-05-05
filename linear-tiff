@@ -31,11 +31,11 @@ set -o pipefail
 
 
 function exit_err {
-	echo >&2 "${@}"; exit 1;
+  echo >&2 "${@}"; exit 1;
 }
 
 function require  {
-	command -v $1 >/dev/null 2>&1 || exit_err "Program '${1}' required, but it's not installed";
+  command -v $1 >/dev/null 2>&1 || exit_err "Program '${1}' required, but it's not installed";
 }
 
 
@@ -185,20 +185,20 @@ CREDITS_FILE="CREDITS"
 # Output small doc if no parameter given
 # --------------------------------------
 if [ "$#" -eq 0 ]; then
-	if [ -f "${HOMEBREW_OPT_DIR}/${USAGE_FILE}" ]; then
-	   	cat "${HOMEBREW_OPT_DIR}/${USAGE_FILE}"
-	else
-		cat "${SCRIPT_DIR}/${USAGE_FILE}"
-	fi
+  if [ -f "${HOMEBREW_OPT_DIR}/${USAGE_FILE}" ]; then
+    cat "${HOMEBREW_OPT_DIR}/${USAGE_FILE}"
+  else
+    cat "${SCRIPT_DIR}/${USAGE_FILE}"
+  fi
 
-	echo;
-	if [ -f "${HOMEBREW_OPT_DIR}/${CREDITS_FILE}" ]; then
-	   	cat "${HOMEBREW_OPT_DIR}/${CREDITS_FILE}"
-	else
-		cat "${SCRIPT_DIR}/${CREDITS_FILE}"
-	fi
-	echo;
-	exit 1;
+  echo;
+  if [ -f "${HOMEBREW_OPT_DIR}/${CREDITS_FILE}" ]; then
+    cat "${HOMEBREW_OPT_DIR}/${CREDITS_FILE}"
+  else
+    cat "${SCRIPT_DIR}/${CREDITS_FILE}"
+  fi
+  echo;
+  exit 1;
 fi
 
 
@@ -220,16 +220,16 @@ RESIZE_IMAGE=0
 
 while getopts advo:r: option
 do
-	case "${option}"
-	in
-		a)	BATCH_MODE=1;;
-		d)	DESATURATE_COLORS=1;;
-		v)	VERBOUS_MODE=1;;
-		o)	OUTPUT_DIRECTORY=${OPTARG};;
-		r)	RESIZE_IMAGE=${OPTARG};;
-		*)	exit_err "Unknown option used. Run ${SCRIPT_NAME} without parameters to get a list of all options."
-        	;;
-	esac
+  case "${option}"
+  in
+    a)  BATCH_MODE=1;;
+    d)  DESATURATE_COLORS=1;;
+    v)  VERBOUS_MODE=1;;
+    o)  OUTPUT_DIRECTORY=${OPTARG};;
+    r)  RESIZE_IMAGE=${OPTARG};;
+    *)  exit_err "Unknown option used. Run ${SCRIPT_NAME} without parameters to get a list of all options."
+        ;;
+  esac
 done
 
 shift $(( OPTIND - 1 ));
@@ -246,78 +246,78 @@ shift $(( OPTIND - 1 ));
 # ======================================
 if [ $BATCH_MODE -eq  1 ]; then
 
-	# ---------------------------------------
-	# The TODO-File in temp directory
-	# ---------------------------------------
-	WORK_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { exit_err "Failed to create temp directory"; }
-	TODO_TXT="${WORK_TMPDIR}/rawfiles-todo.txt"
-	>"${TODO_TXT}"
+  # ---------------------------------------
+  # The TODO-File in temp directory
+  # ---------------------------------------
+  WORK_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { exit_err "Failed to create temp directory"; }
+  TODO_TXT="${WORK_TMPDIR}/rawfiles-todo.txt"
+  >"${TODO_TXT}"
 
 
-	START_TIME=$SECONDS
+  START_TIME=$SECONDS
 
 
-	# ---------------------------------------
-	# Find Files to process
-	# ---------------------------------------
+  # ---------------------------------------
+  # Find Files to process
+  # ---------------------------------------
 
-	find -E "${SEARCH_DIR}" -maxdepth 1 -type f -iregex "${SEARCH_FILES_IREGEX}" > "${TODO_TXT}"
-	NUMOFIMAGES=$(cat "${TODO_TXT}" | wc -l | sed -e 's/^[ \t]*//')
-
-
-	# ---------------------------------------
-	# Print some information
-	# ---------------------------------------
-
-	if [ $VERBOUS_MODE -eq 1 ]; then
-		printf "${C_BLUE}Files to process:${NC}\n"
-		cat "${TODO_TXT}"
-		echo;
-	fi
+  find -E "${SEARCH_DIR}" -maxdepth 1 -type f -iregex "${SEARCH_FILES_IREGEX}" > "${TODO_TXT}"
+  NUMOFIMAGES=$(cat "${TODO_TXT}" | wc -l | sed -e 's/^[ \t]*//')
 
 
-	# ---------------------------------------
-	# Build param string for recursive calls
-	# ---------------------------------------
+  # ---------------------------------------
+  # Print some information
+  # ---------------------------------------
 
-	PARAMS=""
-	if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then PARAMS="${PARAMS} -o ${OUTPUT_DIRECTORY}"; fi
-	if [ $VERBOUS_MODE -eq 1 ]; then PARAMS="${PARAMS} -v"; fi
-	if [ $DESATURATE_COLORS -eq 1 ]; then PARAMS="${PARAMS} -d"; fi
-	if [ $RESIZE_IMAGE -gt 0 ]; then PARAMS="${PARAMS} -r ${RESIZE_IMAGE}"; fi
-
-
-	# ---------------------------------------
-	# Start parallel processing
-	# ---------------------------------------
-	printf "${C_BLUE}Process ${NUMOFIMAGES} images, using GNU Parallel:${NC}\n"
-	cat "${TODO_TXT}" | parallel "$0" "${PARAMS}" {}
+  if [ $VERBOUS_MODE -eq 1 ]; then
+    printf "${C_BLUE}Files to process:${NC}\n"
+    cat "${TODO_TXT}"
+    echo;
+  fi
 
 
-	# ---------------------------------------
-	# Some stats
-	# ---------------------------------------
-	CPUs=$(getconf _NPROCESSORS_ONLN)
-	ELAPSED_TIME=$(($SECONDS - $START_TIME))
+  # ---------------------------------------
+  # Build param string for recursive calls
+  # ---------------------------------------
+
+  PARAMS=""
+  if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then PARAMS="${PARAMS} -o ${OUTPUT_DIRECTORY}"; fi
+  if [ $VERBOUS_MODE -eq 1 ]; then PARAMS="${PARAMS} -v"; fi
+  if [ $DESATURATE_COLORS -eq 1 ]; then PARAMS="${PARAMS} -d"; fi
+  if [ $RESIZE_IMAGE -gt 0 ]; then PARAMS="${PARAMS} -r ${RESIZE_IMAGE}"; fi
 
 
-	# ---------------------------------------
-	# Remove crap
-	# ---------------------------------------
-	rm -Rf "${WORK_TMPDIR}"
+  # ---------------------------------------
+  # Start parallel processing
+  # ---------------------------------------
+  printf "${C_BLUE}Process ${NUMOFIMAGES} images, using GNU Parallel:${NC}\n"
+  cat "${TODO_TXT}" | parallel "$0" "${PARAMS}" {}
 
 
-	# ---------------------------------------
-	# Write outro
-	# ---------------------------------------
-	echo $DIVIDER_LINE
-	printf "${C_BLUE}Some stats:${NC}\n"
-	echo "CPUs used:     ${CPUs}"
-	echo "Elapsed time:  $(($ELAPSED_TIME/60))min $(($ELAPSED_TIME%60))sec"
-	echo "Done:          ${NUMOFIMAGES} images"
+  # ---------------------------------------
+  # Some stats
+  # ---------------------------------------
+  CPUs=$(getconf _NPROCESSORS_ONLN)
+  ELAPSED_TIME=$(($SECONDS - $START_TIME))
 
-	unset require TODO_TXT WORK_TMPDIR SEARCH_FILES_IREGEX ELAPSED_TIME START_TIME NUMOFIMAGES CPUs
-	unset OUTPUT_DIRECTORY PARAMS VERBOUS_MODE DESATURATE_COLORS NUMOFIMAGES SEARCH_DIR RESIZE_IMAGE;
+
+  # ---------------------------------------
+  # Remove crap
+  # ---------------------------------------
+  rm -Rf "${WORK_TMPDIR}"
+
+
+  # ---------------------------------------
+  # Write outro
+  # ---------------------------------------
+  echo $DIVIDER_LINE
+  printf "${C_BLUE}Some stats:${NC}\n"
+  echo "CPUs used:     ${CPUs}"
+  echo "Elapsed time:  $(($ELAPSED_TIME/60))min $(($ELAPSED_TIME%60))sec"
+  echo "Done:          ${NUMOFIMAGES} images"
+
+  unset require TODO_TXT WORK_TMPDIR SEARCH_FILES_IREGEX ELAPSED_TIME START_TIME NUMOFIMAGES CPUs
+  unset OUTPUT_DIRECTORY PARAMS VERBOUS_MODE DESATURATE_COLORS NUMOFIMAGES SEARCH_DIR RESIZE_IMAGE;
 
 
 
@@ -329,187 +329,187 @@ else
 
 
 
-	# ---------------------------------------
-	# Build dcraw parameters
-	# ---------------------------------------
-	DCRAW_OPTIONS=""
+  # ---------------------------------------
+  # Build dcraw parameters
+  # ---------------------------------------
+  DCRAW_OPTIONS=""
 
-	# Add white balance setting
-	if [ -z "${DCRAW_WHITE_BALANCE}" ]; then
-		DCRAW_OPTIONS="${DCRAW_OPTIONS} ${DCRAW_WHITE_BALANCE}"
-	fi;
+  # Add white balance setting
+  if [ -z "${DCRAW_WHITE_BALANCE}" ]; then
+    DCRAW_OPTIONS="${DCRAW_OPTIONS} ${DCRAW_WHITE_BALANCE}"
+  fi;
 
-	# Add flip image setting
-	if [ -z "${DCRAW_FLIP_IMAGE}" ]; then
-		DCRAW_OPTIONS="${DCRAW_OPTIONS} ${DCRAW_FLIP_IMAGE}"
-	fi;
+  # Add flip image setting
+  if [ -z "${DCRAW_FLIP_IMAGE}" ]; then
+    DCRAW_OPTIONS="${DCRAW_OPTIONS} ${DCRAW_FLIP_IMAGE}"
+  fi;
 
-	# How to handle highlights
-	if [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ]; then
-		DCRAW_OPTIONS="${DCRAW_OPTIONS} -H ${DCRAW_HIGHLIGHTS_VALUE}"
-	fi;
+  # How to handle highlights
+  if [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ]; then
+    DCRAW_OPTIONS="${DCRAW_OPTIONS} -H ${DCRAW_HIGHLIGHTS_VALUE}"
+  fi;
 
-	# Add demosaicing algorithm number
-	DCRAW_OPTIONS="${DCRAW_OPTIONS} -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
+  # Add demosaicing algorithm number
+  DCRAW_OPTIONS="${DCRAW_OPTIONS} -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
 
-	# Colorspace
-	DCRAW_OPTIONS="${DCRAW_OPTIONS} -o ${DCRAW_COLORSPACE_VALUE}"
+  # Colorspace
+  DCRAW_OPTIONS="${DCRAW_OPTIONS} -o ${DCRAW_COLORSPACE_VALUE}"
 
-	# 16 bit linearity, same as "-6 -W -g 1 1"
-	DCRAW_OPTIONS="${DCRAW_OPTIONS} -4"
+  # 16 bit linearity, same as "-6 -W -g 1 1"
+  DCRAW_OPTIONS="${DCRAW_OPTIONS} -4"
 
-	# TIFF output
-	DCRAW_OPTIONS="${DCRAW_OPTIONS} -T"
+  # TIFF output
+  DCRAW_OPTIONS="${DCRAW_OPTIONS} -T"
 
-	# if [ "${VERBOUS_MODE}" -gt 0 ]; then
-	# 	DCRAW_OPTIONS="-v ${DCRAW_OPTIONS}"
-	# fi
-
-
-	# ---------------------------------------
-	#  Build mogrify's options string. Start blank.
-	# ---------------------------------------
-	MOGRIFY_OPTIONS=""
+  # if [ "${VERBOUS_MODE}" -gt 0 ]; then
+  #   DCRAW_OPTIONS="-v ${DCRAW_OPTIONS}"
+  # fi
 
 
-	# ---------------------------------------
-	# Resize image on its larger side
-	# ---------------------------------------
-	if [ $RESIZE_IMAGE -gt 0 ]; then
-		MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -resize ${RESIZE_IMAGE}x${RESIZE_IMAGE}>"
-	fi
+  # ---------------------------------------
+  #  Build mogrify's options string. Start blank.
+  # ---------------------------------------
+  MOGRIFY_OPTIONS=""
 
 
-	# ---------------------------------------
-	#  Desaturate colors, if required:
-	#  Convert to Grayscale with Gray profile embedded with gamma 1.0
-	#  Otherwise, apply linear sRGB with gamma 1.0 profile
-	#
-	#  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
-	# ---------------------------------------
-
-	if [ $DESATURATE_COLORS -eq 1 ]; then
-		MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -modulate 100,0 -colorspace Gray -profile ${GRAY_ICC_PROFILE_PATH}"
-	else
-		MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -profile ${LINEAR_SRGB_ICC_PROFILE_PATH}"
-	fi
-
-	# ---------------------------------------
-	#  Compress image
-	# ---------------------------------------
-	MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -compress Zip "
+  # ---------------------------------------
+  # Resize image on its larger side
+  # ---------------------------------------
+  if [ $RESIZE_IMAGE -gt 0 ]; then
+    MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -resize ${RESIZE_IMAGE}x${RESIZE_IMAGE}>"
+  fi
 
 
+  # ---------------------------------------
+  #  Desaturate colors, if required:
+  #  Convert to Grayscale with Gray profile embedded with gamma 1.0
+  #  Otherwise, apply linear sRGB with gamma 1.0 profile
+  #
+  #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
+  # ---------------------------------------
 
-	# ---------------------------------------
-	# Create output directory if needed.
-	# ---------------------------------------
-	if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then
-		mkdir -p "${OUTPUT_DIRECTORY}";
-	fi
+  if [ $DESATURATE_COLORS -eq 1 ]; then
+    MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -modulate 100,0 -colorspace Gray -profile ${GRAY_ICC_PROFILE_PATH}"
+  else
+    MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -profile ${LINEAR_SRGB_ICC_PROFILE_PATH}"
+  fi
 
-
-	# =============================================================
-	#  The Loop: Process each file given
-	# =============================================================
-
-	for INPUT_FILE in "$@"
-	do
-		# ---------------------------------------
-		#  If $INPUT_FILE is regular file:
-		# ---------------------------------------
-		if [ -f "${INPUT_FILE}" ]; then
-
-			echo $DIVIDER_LINE
-
-
-			# ---------------------------------------
-			# Filename magic
-			# ---------------------------------------
-			INPUT_FILE_EXTENSION="${INPUT_FILE##*.}";
-			INPUT_FILE_BASENAME="${INPUT_FILE%.$INPUT_FILE_EXTENSION}"
-			INPUT_FILE_BASENAME="${INPUT_FILE_BASENAME##*/}" # remove trailing slash
-
-			# Build output filename as dcraw would do
-			OUTPUT_FILE="${INPUT_FILE_BASENAME}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
-			OUTPUT_JPEG="${INPUT_FILE_BASENAME}.jpg"
+  # ---------------------------------------
+  #  Compress image
+  # ---------------------------------------
+  MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -compress Zip "
 
 
 
-			# ---------------------------------------
-			# Show some image info
-			# ---------------------------------------
-
-			printf "${C_WHITE}"
-			if [ "${VERBOUS_MODE}" -eq 1 ]; then
-				dcraw -i -v "${INPUT_FILE}"
-				echo;
-			else
-				dcraw -i "${INPUT_FILE}"
-			fi
-			printf "${NC}\n"
+  # ---------------------------------------
+  # Create output directory if needed.
+  # ---------------------------------------
+  if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then
+    mkdir -p "${OUTPUT_DIRECTORY}";
+  fi
 
 
+  # =============================================================
+  #  The Loop: Process each file given
+  # =============================================================
+
+  for INPUT_FILE in "$@"
+  do
+    # ---------------------------------------
+    #  If $INPUT_FILE is regular file:
+    # ---------------------------------------
+    if [ -f "${INPUT_FILE}" ]; then
+
+      echo $DIVIDER_LINE
 
 
-			# ---------------------------------------
-			# Call dcraw
-			# ---------------------------------------
-			printf "Create linear TIFF: "
-			if [ $VERBOUS_MODE -gt 0 ]; then
-				printf "\ndcraw $DCRAW_OPTIONS ${INPUT_FILE}\n..."
-			fi;
-			dcraw $DCRAW_OPTIONS "${INPUT_FILE}" && echo "Done."
-			if [ $VERBOUS_MODE -gt 0 ]; then printf "\n"; fi
+      # ---------------------------------------
+      # Filename magic
+      # ---------------------------------------
+      INPUT_FILE_EXTENSION="${INPUT_FILE##*.}";
+      INPUT_FILE_BASENAME="${INPUT_FILE%.$INPUT_FILE_EXTENSION}"
+      INPUT_FILE_BASENAME="${INPUT_FILE_BASENAME##*/}" # remove trailing slash
+
+      # Build output filename as dcraw would do
+      OUTPUT_FILE="${INPUT_FILE_BASENAME}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
+      OUTPUT_JPEG="${INPUT_FILE_BASENAME}.jpg"
 
 
 
-			# ---------------------------------------
-			# On Success, i.e. dcraw has written an output file:
-			# ---------------------------------------
-			if [ -f "${OUTPUT_FILE}" ]; then
+      # ---------------------------------------
+      # Show some image info
+      # ---------------------------------------
+
+      printf "${C_WHITE}"
+      if [ "${VERBOUS_MODE}" -eq 1 ]; then
+        dcraw -i -v "${INPUT_FILE}"
+        echo;
+      else
+        dcraw -i "${INPUT_FILE}"
+      fi
+      printf "${NC}\n"
 
 
-				# ---------------------------------------
-				#  Handle output file
-				# ---------------------------------------
-				printf "Mangle output file through mogrify: "
-				if [ $VERBOUS_MODE -gt 0 ]; then
-					printf "\nmogrify ${MOGRIFY_OPTIONS}\n..."
-				fi;
-				mogrify ${MOGRIFY_OPTIONS} "${OUTPUT_FILE}" && echo "Done."
-				if [ $VERBOUS_MODE -gt 0 ]; then printf "\n"; fi
 
 
-				# ---------------------------------------
-				# Move output file to directory, if required
-				# ---------------------------------------
-				if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then
-					mv "${OUTPUT_FILE}" "${OUTPUT_DIRECTORY}/"
-					printf "Result: ${C_GREEN}${OUTPUT_DIRECTORY}/${OUTPUT_FILE}${NC}\n"
-				else
-					printf "Result: ${C_GREEN}${OUTPUT_FILE}${NC}\n"
-				fi
+      # ---------------------------------------
+      # Call dcraw
+      # ---------------------------------------
+      printf "Create linear TIFF: "
+      if [ $VERBOUS_MODE -gt 0 ]; then
+        printf "\ndcraw $DCRAW_OPTIONS ${INPUT_FILE}\n..."
+      fi;
+      dcraw $DCRAW_OPTIONS "${INPUT_FILE}" && echo "Done."
+      if [ $VERBOUS_MODE -gt 0 ]; then printf "\n"; fi
 
-			# ---------------------------------------
-			# On error:
-			# ---------------------------------------
-			else
-				printf "${C_RED}Hmmm. Expected dcraw to have written '${OUTPUT_FILE}'; In fact, this file does not exist?${NC}\n"
-			fi;
 
-			# Go on looping...
 
-		# ---------------------------------------
-		#  $INPUT_FILE is NOT a regular file
-		# ---------------------------------------
-		else
-			printf "${C_RED}${INPUT_FILE} is not a regular file.${NC}\n"
-		fi;
+      # ---------------------------------------
+      # On Success, i.e. dcraw has written an output file:
+      # ---------------------------------------
+      if [ -f "${OUTPUT_FILE}" ]; then
 
-		# screen readability
-		echo;
-	done
+
+        # ---------------------------------------
+        #  Handle output file
+        # ---------------------------------------
+        printf "Mangle output file through mogrify: "
+        if [ $VERBOUS_MODE -gt 0 ]; then
+          printf "\nmogrify ${MOGRIFY_OPTIONS}\n..."
+        fi;
+        mogrify ${MOGRIFY_OPTIONS} "${OUTPUT_FILE}" && echo "Done."
+        if [ $VERBOUS_MODE -gt 0 ]; then printf "\n"; fi
+
+
+        # ---------------------------------------
+        # Move output file to directory, if required
+        # ---------------------------------------
+        if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then
+          mv "${OUTPUT_FILE}" "${OUTPUT_DIRECTORY}/"
+          printf "Result: ${C_GREEN}${OUTPUT_DIRECTORY}/${OUTPUT_FILE}${NC}\n"
+        else
+          printf "Result: ${C_GREEN}${OUTPUT_FILE}${NC}\n"
+        fi
+
+      # ---------------------------------------
+      # On error:
+      # ---------------------------------------
+      else
+        printf "${C_RED}Hmmm. Expected dcraw to have written '${OUTPUT_FILE}'; In fact, this file does not exist?${NC}\n"
+      fi;
+
+      # Go on looping...
+
+    # ---------------------------------------
+    #  $INPUT_FILE is NOT a regular file
+    # ---------------------------------------
+    else
+      printf "${C_RED}${INPUT_FILE} is not a regular file.${NC}\n"
+    fi;
+
+    # screen readability
+    echo;
+  done
 
 
 fi;
