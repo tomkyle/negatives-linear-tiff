@@ -46,6 +46,7 @@ Option | Value | Description
 :------|:------|:------------
 -a     |       | All images — process any RAW/NEF/CR2 file in working directory, using GNU Parallel.
 -d     |       | Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
+-f     | value | Mirror the image vertically or horizontally. Possible values are `flop` or `flip`. Example: `-f flop`
 -o     | path  | Output directory — default is current working directory. Example: `-o results`
 -r     | pixel | Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
 -v     |       | Verbous mode — show some more information under way.

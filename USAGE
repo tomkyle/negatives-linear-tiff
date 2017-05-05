@@ -22,6 +22,14 @@ OPTIONS:
               Grayscaling saves up to 60% in file size.
               If omitted, the TIFF files remain color-profiled (sRGB).
 
+-f direction  Mirror the image vertically or horizontally.
+              Possible values are:
+
+              flip - mirror upside-down
+              flop - mirror in the horizontal direction
+                     This is the way to go when your negatives
+                     have been digitalized on their emulsion (back) side.
+
 -o path       Output directory. Defaults to current working dir.
 
 -r pixel      Resize larger side to this pixel length, preserving aspect ratio.

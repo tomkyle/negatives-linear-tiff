@@ -220,18 +220,19 @@ function main {
   OUTPUT_DIRECTORY="${PWD}"
   DESATURATE_COLORS=0
   RESIZE_IMAGE=0
-
+  FLIPFLOP_POSITIVE=""
 
   # --------------------------------------
   # Parse parameters
   # --------------------------------------
 
-  while getopts advo:r: option
+  while getopts adf:vo:r: option
   do
     case "${option}"
     in
       a)  BATCH_MODE=1;;
       d)  DESATURATE_COLORS=1;;
+      f)  FLIPFLOP_POSITIVE="${OPTARG}";;
       v)  VERBOUS_MODE=1;;
       o)  OUTPUT_DIRECTORY=${OPTARG};;
       r)  RESIZE_IMAGE=${OPTARG};;
@@ -293,6 +294,7 @@ function main {
     if [ $VERBOUS_MODE -eq 1 ]; then PARAMS="${PARAMS} -v"; fi
     if [ $DESATURATE_COLORS -eq 1 ]; then PARAMS="${PARAMS} -d"; fi
     if [ $RESIZE_IMAGE -gt 0 ]; then PARAMS="${PARAMS} -r ${RESIZE_IMAGE}"; fi
+    if [ ! -z "${FLIPFLOP_POSITIVE}" ]; then PARAMS="${PARAMS} -f ${FLIPFLOP_POSITIVE}"; fi
 
 
     # ---------------------------------------
@@ -380,6 +382,15 @@ function main {
     MOGRIFY_OPTIONS=""
 
 
+
+    # ---------------------------------------
+    # Flip or flop the image, if required.
+    # ---------------------------------------
+    if [ !-z "${FLIPFLOP_POSITIVE}" ]; then
+      MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -${FLIPFLOP_POSITIVE}"
+    fi
+
+
     # ---------------------------------------
     # Resize image on its larger side
     # ---------------------------------------
@@ -401,6 +412,7 @@ function main {
     else
       MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -profile ${LINEAR_SRGB_ICC_PROFILE_PATH}"
     fi
+
 
     # ---------------------------------------
     #  Compress image
