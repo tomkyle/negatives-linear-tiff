@@ -1,4 +1,4 @@
-# negatives/lineartiff
+# negatives/linear-tiff
 
 **Converts RAW/NEF/CR2 files into linear TIFF files.**
 
@@ -16,28 +16,28 @@ Requirements:
 ## Homebrew Installation (OS X)
 
 
-The *lineartiff* bash script can be installed by a Homebrew formula, which itself is part of the [tomkyle/homebrew-negatives](https://github.com/tomkyle/homebrew-negatives) tap. 
+The *linear-tiff* bash script can be installed by a Homebrew formula, which itself is part of the [tomkyle/homebrew-negatives](https://github.com/tomkyle/homebrew-negatives) tap. 
 
 ```bash
 # Install tap, opt
 $ brew tap tomkyle/negatives
 
 # Install formula
-$ brew install lineartiff
+$ brew install linear-tiff
 ```
 
 As “tapping” first is not neccessarily needed, you can install the formula directly:
 
 ```bash
-$ brew install tomkyle/negatives/lineartiff
+$ brew install tomkyle/negatives/linear-tiff
 ```
 
 # Usage
 
-Run *lineartiff* without parameters to get a short help text:
+Run *linear-tiff* without parameters to get a short help text:
 
 ```bash
-$ lineartiff [options] [-a | file(s)]
+$ linear-tiff [options] [-a | file(s)]
 ```
 
 ## Options
@@ -53,15 +53,15 @@ Option | Value | Description
                               
 ## Problems and FAQ
 
-### lineartiff does not find my Raw photos in batch mode.
+### linear-tiff does not find my Raw photos in batch mode.
 
-Not neccessarily your fault. While *dcraw* itself can defacto handle every existing RAW photo file extensions, *lineartiff* uses the *find* command with a regex to get a list of files to work on. So we have a question of “how long is the regex”. — For now, these most-occuring file extensions are implemented in *lineartiff:*
+Not neccessarily your fault. While *dcraw* itself can defacto handle every existing RAW photo file extensions, *linear-tiff* uses the *find* command with a regex to get a list of files to work on. So we have a question of “how long is the regex”. — For now, these most-occuring file extensions are implemented in *linear-tiff:*
 
 - NEF (Nikon)
 - CR2 (Canon)
 - RAW (Contax, Kodak, Leica, Panasonic)
 
-[Drop me a line](https://github.com/tomkyle/negatives-lineartiff/issues) to “order” your favourite file extension. I'll happily lengthen the regex to your needs :smiley:
+[Drop me a line](https://github.com/tomkyle/negatives-linear-tiff/issues) to “order” your favourite file extension. I'll happily lengthen the regex to your needs :smiley:
 
 
 
