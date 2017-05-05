@@ -19,7 +19,7 @@ Requirements:
 The *linear-tiff* bash script can be installed by a Homebrew formula, which itself is part of the [tomkyle/homebrew-negatives](https://github.com/tomkyle/homebrew-negatives) tap. 
 
 ```bash
-# Install tap, opt
+# Install tap, optionally
 $ brew tap tomkyle/negatives
 
 # Install formula
