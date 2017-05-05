@@ -47,7 +47,7 @@ function require  {
 require dcraw
 require parallel
 require mogrify
-require iccprofiles
+require color-profiles
 
 # System commands
 require getconf
@@ -95,12 +95,12 @@ SEARCH_DIR="."
 
 # Linear Gamma 1.0 Gray profile
 # Applied when output is converted to Grayscale
-GRAY_ICC_PROFILE_PATH=$(iccprofiles gray-linear )
+GRAY_ICC_PROFILE_PATH=$(color-profiles gray-linear )
 
 # Linear Gamma 1.0 sRGB profile
 # Applied when output is NOT converted to Grascale.
 # Replaces the ICC profile dcraw applied.
-LINEAR_SRGB_ICC_PROFILE_PATH=$(iccprofiles srgb-linear )
+LINEAR_SRGB_ICC_PROFILE_PATH=$(color-profiles srgb-linear )
 
 
 
