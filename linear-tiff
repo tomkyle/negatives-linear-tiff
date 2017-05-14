@@ -32,10 +32,33 @@ set -o pipefail
 # set -o xtrace
 
 
-# Setting Internal Field Separator
+# --------------------------------------
+# Immutables
+# --------------------------------------
+
+# Directory where this script lives in
+readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+readonly SCRIPT_NAME=$(basename $0)
+
+# Internal Field Separator
 readonly DEFAULT_IFS="${IFS}"
 readonly SAFER_IFS=$'\n\t'
-IFS="${SAFER_IFS}"
+
+# Consistent package location
+readonly HOMEBREW_OPT_DIR=$(brew --prefix $(basename $0))
+# Hack for development purposes
+# HOMEBREW_OPT_DIR=$SCRIPT_DIR
+
+
+# --------------------------------------
+# Global functions
+# --------------------------------------
+
+
+# Error message and error exit
+function exit_err {
+  echo >&2 "${@}"; exit 1;
+}
 
 
 # On regular exit, remove temporary work dir
@@ -47,13 +70,14 @@ function trapCleanupTempDir() {
   fi
 }
 
+
+
+# --------------------------------------
+# Global functions
+# --------------------------------------
+
+IFS="${SAFER_IFS}"
 trap trapCleanupTempDir EXIT
-
-
-# Error message and error exit
-function exit_err {
-  echo >&2 "${@}"; exit 1;
-}
 
 
 # ======================================
@@ -88,20 +112,6 @@ function main {
   # ======================================
   #  Prerequisites
   # ======================================
-
-
-  # --------------------------------------
-  # Directories
-  # --------------------------------------
-
-  # Directory where this script lives in
-  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-  SCRIPT_NAME=$(basename $0)
-
-  # Consistent package location
-  HOMEBREW_OPT_DIR=$(brew --prefix $(basename $0))
-  # Hack for development purposes
-  # HOMEBREW_OPT_DIR=$SCRIPT_DIR
 
 
   # --------------------------------------
