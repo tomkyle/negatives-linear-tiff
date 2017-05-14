@@ -50,6 +50,11 @@ function trapCleanupTempDir() {
 trap trapCleanupTempDir EXIT
 
 
+# Error message and error exit
+function exit_err {
+  echo >&2 "${@}"; exit 1;
+}
+
 
 # ======================================
 #  The main program
@@ -57,18 +62,14 @@ trap trapCleanupTempDir EXIT
 
 function main {
 
-  function exit_err {
-    echo >&2 "${@}"; exit 1;
-  }
-
-  function require  {
-    command -v $1 >/dev/null 2>&1 || exit_err "Program '${1}' required, but it's not installed";
-  }
-
 
   # --------------------------------------
   # Requirements
   # --------------------------------------
+
+  function require  {
+    command -v $1 >/dev/null 2>&1 || exit_err "Program '${1}' required, but it's not installed";
+  }
 
   # Homebrew dependencies
   require dcraw
