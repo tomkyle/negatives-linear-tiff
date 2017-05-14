@@ -32,8 +32,8 @@ set -o pipefail
 # set -o xtrace
 
 # Setting Internal Field Separator
-DEFAULT_IFS="${IFS}"
-SAFER_IFS=$'\n\t'
+readonly DEFAULT_IFS="${IFS}"
+readonly SAFER_IFS=$'\n\t'
 IFS="${SAFER_IFS}"
 
 
