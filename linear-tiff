@@ -31,13 +31,14 @@ set -o nounset
 set -o pipefail
 # set -o xtrace
 
+
 # Setting Internal Field Separator
 readonly DEFAULT_IFS="${IFS}"
 readonly SAFER_IFS=$'\n\t'
 IFS="${SAFER_IFS}"
 
 
-
+# On regular exit, remove temporary work dir
 function trapCleanupTempDir() {
   tmp_dir_to_clean="${WORK_TMPDIR:-}"
   if [ -d "${tmp_dir_to_clean}" ]; then
@@ -47,6 +48,8 @@ function trapCleanupTempDir() {
 }
 
 trap trapCleanupTempDir EXIT
+
+
 
 # ======================================
 #  The main program
