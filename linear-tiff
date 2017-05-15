@@ -371,7 +371,7 @@ function convertRawPhotos {
 			o)  output_directory=${OPTARG};;
 			r)  resize_width=${OPTARG};;
 			v)  verbous_mode=1;;
-			*)  exit_err "Unknown option used. Run ${SCRIPT_NAME} without parameters to get a list of all options.";;
+			*)  exit_err "Unknown option used. Run '${SCRIPT_NAME} -h' parameters to get a list of all options.";;
 		esac
 	done
 
