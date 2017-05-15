@@ -259,6 +259,8 @@ function runBatchMode {
 
 # ======================================
 #  convertRawPhotos
+#
+#  Usage: convertRawPhotos [-d] [-v] [-f direction] [-o path] [-r pixel] rawfile [rawfiles ...]
 # ======================================
 
 function convertRawPhotos {
