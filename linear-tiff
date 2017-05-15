@@ -586,6 +586,87 @@ function main {
 	declare -i batch_mode=0
 	local remaining_arguments=""
 
+
+    # Set short options -----------------------------------------------------------
+
+    # option string, for short options.
+    #
+    # Very much like getopts, expected short options should be appended to the
+    # string here. Any option followed by a ':' takes a required argument.
+    #
+    # In this example, `-x` and `-h` are regular short options, while `o` is
+    # assumed to have an argument and will be split if joined with the string,
+    # meaning `-oARG` would be split to `-o ARG`.
+    readonly optstring=ahdf:vo:r:
+
+echo "Anfang: $@"
+
+# Normalize -------------------------------------------------------------------
+
+# iterate over options, breaking -ab into -a -b and --foo=bar into --foo bar
+# also turns -- into --endopts to avoid issues with things like '-o-', the '-'
+# should not indicate the end of options, but be an invalid option (or the
+# argument to the option, such as wget -qO-)
+unset options
+# while the number of arguments is greater than 0
+while ((${#}))
+do
+    case ${1} in
+        # if option is of type -ab
+        -[!-]?*)
+            # loop over each character starting with the second
+            for ((i=1; i<${#1}; i++))
+            do
+                # extract 1 character from position 'i'
+                c=${1:i:1}
+                # add current char to options
+                options+=("-${c}")
+
+                # if option takes a required argument, and it's not the last char
+                # make the rest of the string its argument
+                if [[ ${optstring} = *"${c}:"* && ${1:i+1} ]]
+                then
+                    options+=("${1:i+1}")
+                    break
+                fi
+            done
+            ;;
+        # if option is of type --foo=bar, split on first '='
+        --?*=*)
+            options+=("${1%%=*}" "${1#*=}")
+            ;;
+        # end of options, stop breaking them up
+        --)
+            options+=(--endopts)
+            shift
+            options+=("${@}")
+            break
+            ;;
+        # otherwise, nothing special
+        *)
+            options+=("${1}")
+            ;;
+    esac
+
+    shift
+done
+# set new positional parameters to altered options. Set default to blank.
+set -- "${options[@]:-}"
+unset options
+echo "Ende: $@"
+
+
+
+
+
+
+
+
+
+
+    echo "Mal sehen!"; exit;
+
+
 	while getopts "ah${OPTIONS_LIST}" option
 	do
 		case "${option}"
@@ -604,6 +685,19 @@ function main {
 		esac
 	done
 	shift "$((OPTIND-1))"
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	if [ $batch_mode -gt 0 ]; then
