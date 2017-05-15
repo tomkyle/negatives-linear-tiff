@@ -171,6 +171,12 @@ function populateTodoFile {
 }
 
 
+function displayHelp {
+    catFirstFound "${USAGE_FILE}"
+    catFirstFound "${CREDITS_FILE}"
+    exit 1;
+}
+
 # --------------------------------------
 # Global settings
 # --------------------------------------
@@ -561,9 +567,7 @@ function main {
 	# Print short help if no arguments
 	# ---------------------------------------
 	if [ "$#" -eq 0 ] || [[ "${1:-}" =~ ^-h|--help$  ]]; then
-		catFirstFound "${USAGE_FILE}"
-		catFirstFound "${CREDITS_FILE}"
-		exit 1;
+    displayHelp
 	fi
 
 
@@ -574,15 +578,21 @@ function main {
 	declare -i batch_mode=0
 	local remaining_arguments=""
 
-	while getopts "a{$OPTIONS_LIST}" option
+	while getopts "ah${OPTIONS_LIST}" option
 	do
 		case "${option}"
 		in
 			a)  batch_mode=1;;
+      h)  displayHelp;;
 			v)  verbous_mode=1
 					remaining_arguments="${remaining_arguments} -${option}"
 					;;
-			*)  remaining_arguments="${remaining_arguments} -${option} ${OPTARG:-}";;
+			*)  if [[ ${OPTIONS_LIST} == *"${option}"* ]]; then
+            remaining_arguments="${remaining_arguments} -${option} ${OPTARG:-}"
+          else
+            exit_err "Unknown argument. Try '${SCRIPT_NAME} -h' for help."
+          fi;
+          ;;
 		esac
 	done
 	shift "$((OPTIND-1))"
