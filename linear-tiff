@@ -85,7 +85,7 @@ function exit_err {
 }
 
 function e_warning {
-	printf "${C_ORANGE}➜ "
+  printf "${C_ORANGE}➜ "
   echo -e "${@}"
   printf "${NC}"
 }
@@ -591,16 +591,16 @@ function main {
 		case "${option}"
 		in
 			a)  batch_mode=1;;
-      h)  displayHelp;;
+            h)  displayHelp;;
 			v)  verbous_mode=1
-					remaining_arguments="${remaining_arguments} -${option}"
-					;;
+				remaining_arguments="${remaining_arguments} -${option}"
+				;;
 			*)  if [[ ${OPTIONS_LIST} == *"${option}"* ]]; then
-            remaining_arguments="${remaining_arguments} -${option} ${OPTARG:-}"
-          else
-            exit_err "Unknown argument. Try '${SCRIPT_NAME} -h' for help."
-          fi;
-          ;;
+                    remaining_arguments="${remaining_arguments} -${option} ${OPTARG:-}"
+                else
+                    exit_err "Unknown argument. Try '${SCRIPT_NAME} -h' for help."
+                fi;
+                ;;
 		esac
 	done
 	shift "$((OPTIND-1))"
