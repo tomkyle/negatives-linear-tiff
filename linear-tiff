@@ -36,6 +36,9 @@ set -o pipefail
 # Immutables
 # --------------------------------------
 
+# List of possible script arguments (getopts)
+readonly OPTIONS_LIST="df:vo:r:"
+
 # Internal Field Separator
 readonly DEFAULT_IFS="${IFS}"
 readonly SAFER_IFS=$'\n\t'
@@ -52,8 +55,6 @@ readonly HOMEBREW_OPT_DIR=$(brew --prefix $(basename $0))
 # Prepare (but not create) a new temp directory
 readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { exit_err "Failed to create temp directory name."; }
 
-# List of possible script arguments (getopts)
-readonly OPTIONS_LIST="df:vo:r:"
 
 
 # Formatting stuff
@@ -171,6 +172,9 @@ function populateTodoFile {
 }
 
 
+# --------------------------------------
+# displayHelp
+# --------------------------------------
 function displayHelp {
     catFirstFound "${USAGE_FILE}"
     catFirstFound "${CREDITS_FILE}"
