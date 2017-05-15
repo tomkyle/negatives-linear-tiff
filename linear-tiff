@@ -77,8 +77,10 @@ readonly CREDITS_FILE="CREDITS"
 # --------------------------------------
 
 
-# Error message and error exit
+# Error message and error exit,
+# redirecting stdout to stderr
 function exit_err {
+
 	echo >&2 "${@}"; exit 1;
 }
 
