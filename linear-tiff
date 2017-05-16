@@ -720,6 +720,7 @@ function main {
                 remaining_arguments+=" ${__option}"
                 ;;
             -v|--verbous)
+                verbous_mode=1
                 remaining_arguments+=" ${__option}"
                 ;;
             -f|--flipflop)
