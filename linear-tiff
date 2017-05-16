@@ -256,6 +256,7 @@ declare DEFAULT_SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 # Disbaled per default; enabe with -v flag
 declare -i verbous_mode=0;
 declare -i desaturate_colors=0
+declare flipflop_positive=""
 
 # ======================================
 #  runBatchMode
@@ -412,7 +413,7 @@ function convertRawPhotos {
     # --------------------------------------
 
 
-    local flipflop_positive=""
+
     local output_directory="${PWD}"
 
     declare -i resize_width=0
@@ -737,6 +738,7 @@ function main {
                 ;;
             -f|--flipflop)
                 _require_argument "${__option}" "${__maybe_param}"
+                flipflop_positive="${__maybe_param}"
                 remaining_arguments+="${__option} ${__maybe_param}"
                 shift
                 ;;
