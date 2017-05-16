@@ -463,7 +463,11 @@ function convertRawPhotos {
 
     # Flip or flop the image, if required.
     if [ ! -z "${flipflop_positive}" ]; then
-        mogrify_options+=" -${flipflop_positive}"
+        if [ "${flipflop_positive}" = "flipflop" ]; then
+            mogrify_options+=" -flip -flop"
+        else
+            mogrify_options+=" -${flipflop_positive}"
+        fi
     fi
 
 
