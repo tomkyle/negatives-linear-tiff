@@ -2,8 +2,6 @@
 
 **Converts RAW/NEF/CR2 files into linear 16bit-TIFF files.**
 
-**Features:**
-
 - **Mirroring** for negatives digitalized on their emulsion side. 
 - **Resizing**  when megapixel power is not everything.
 - **Grayscaling:** B/W lovers save up to 60% disk space. 
