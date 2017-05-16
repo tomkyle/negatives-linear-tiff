@@ -46,7 +46,7 @@ readonly OPTIONS_LIST="f:o:r:ahdv"
 readonly DEFAULT_IFS="${IFS}"
 readonly SAFER_IFS=$'\n\t'
 
-# Directory where this script lives in
+# Filesystem basics
 readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly SCRIPT_NAME=$(basename "${0}")
 
@@ -81,14 +81,13 @@ readonly CREDITS_FILE="CREDITS"
 # --------------------------------------
 
 
-# Error message and error exit,
-# redirecting stdout to stderr
+# Error message and error exit, redirecting stdout to stderr
 function e_error {
     echo -e >&2 "${C_RED}✖ ${*}${NC}"; exit 1;
 }
 
 function e_info {
-  echo -e "${C_BLUE}➜ ${*}${NC}"
+  echo -e "${C_BLUE}${*}${NC}"
 }
 
 function e_warning {
@@ -124,7 +123,8 @@ function createTodoFile {
 # --------------------------------------
 # Check if given command is installed, exit otherwise
 #
-# Usage: require <command>
+# Usage:
+#   require <command>
 # --------------------------------------
 function require  {
     command -v $1 >/dev/null 2>&1 || e_error "$(printf "Program '%s' required, but it's not installed" "${1}")"
@@ -134,7 +134,8 @@ function require  {
 # --------------------------------------
 # Count lines in file
 #
-# Usage: countLinesInFile <file>
+# Usage:
+#   countLinesInFile <file>
 # --------------------------------------
 function countLinesInFile {
     cat "${1}" | wc -l | sed -e 's/^[ \t]*//'
@@ -145,7 +146,8 @@ function countLinesInFile {
 #
 # Outputs given file in first matching location.
 #
-# Usage: catFirstFound <file>
+# Usage:
+#   catFirstFound <file>
 #
 # --------------------------------------
 function catFirstFound {
@@ -162,7 +164,8 @@ function catFirstFound {
 # --------------------------------------
 # populateTodoFile
 #
-# Usage: populateTodoFile <file> [find iregex] [search dir]
+# Usage:
+#   populateTodoFile <file> [find iregex] [search dir]
 # --------------------------------------
 function populateTodoFile {
     local todofile=${1}
@@ -229,16 +232,12 @@ function trapCleanupTempDir() {
 # Global settings
 # --------------------------------------
 
-### While this is recommented in "best-practice tutorials",
+### While this is recommended in "best-practice tutorials",
 ### this breaks calling dcraw and mogrify. Better let this commented-out.
 #IFS="${SAFER_IFS}"
 
 # Default exit handler
 trap trapCleanupTempDir EXIT SIGINT
-
-# Verbous mode
-# Disbaled per default; enabe with -v flag
-declare -i verbous_mode=0;
 
 
 # Where to search
@@ -247,6 +246,15 @@ declare DEFAULT_SEARCH_DIRECTORY='.'
 # What to search
 # The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
 declare DEFAULT_SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+
+
+# --------------------------------------
+# User settings
+# --------------------------------------
+
+# Verbous mode
+# Disbaled per default; enabe with -v flag
+declare -i verbous_mode=0;
 
 
 # ======================================
