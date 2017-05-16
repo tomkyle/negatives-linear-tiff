@@ -114,9 +114,9 @@ function e_verbous () {
 # --------------------------------------
 function trapCleanupTempDir() {
     tmp_dir_to_clean="${WORK_TMPDIR:-}"
-    # printf "Clean up temp dir %s ... " "${tmp_dir_to_clean}"
     if [ -d "${tmp_dir_to_clean}" ]; then
-        rm -Rf "${tmp_dir_to_clean}" && echo "Done."
+        printf "\nRemove temporary directory %s ... " "${tmp_dir_to_clean}"
+        rm -Rf "${tmp_dir_to_clean}" && e_success
     fi
 }
 
@@ -230,7 +230,7 @@ _require_argument() {
 #IFS="${SAFER_IFS}"
 
 # Default exit handler
-trap trapCleanupTempDir EXIT
+trap trapCleanupTempDir EXIT SIGINT
 
 # Verbous mode
 # Disbaled per default; enabe with -v flag
