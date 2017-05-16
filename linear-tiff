@@ -39,7 +39,7 @@ set -o pipefail
 # List of possible script arguments (getopts)
 # Very much like getopts, expected short options should be appended to the
 # string here. Any option followed by a ':' takes a required argument.
-OPTIONS_LIST="f:o:r:ahdv"
+readonly OPTIONS_LIST="f:o:r:ahdv"
 
 
 # Internal Field Separator
@@ -97,6 +97,10 @@ function e_warning {
 
 function e_success () {
   echo -e "${C_GREEN}✔ ${*}${NC}"
+}
+
+function e_result () {
+  echo -e "${C_GREEN}${*}${NC}"
 }
 
 function e_verbous () {
@@ -291,7 +295,7 @@ function runBatchMode {
     local readonly ELAPSED_TIME=$(($SECONDS - $START_TIME))
 
     echo $DIVIDER_LINE
-    e_info "Some stats:"
+    echo "Some stats:"
     printf "CPUs used:     %s\n"          ${CPUs}
     printf "Elapsed time:  %smin %ssec\n" $(($ELAPSED_TIME/60)) $(($ELAPSED_TIME%60))
     printf "Done:          %s images\n"   ${number_of_images}
@@ -585,9 +589,9 @@ function convertRawPhotos {
         # ---------------------------------------
         if [ "${output_directory}" != "${PWD}" ]; then
             mv "${output_tiff}" "${output_directory}/"
-            e_success "$(printf "Result: %s/%s" "${output_directory}" "${output_tiff}")"
+            e_result "$(printf "Result: %s/%s" "${output_directory}" "${output_tiff}")"
         else
-            e_success "$(printf "Result: %s$" "${output_tiff}")"
+            e_result "$(printf "Result: %s$" "${output_tiff}")"
         fi
 
 
