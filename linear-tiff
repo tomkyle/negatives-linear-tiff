@@ -166,11 +166,11 @@ function catFirstFound {
 # findFiles
 #
 # Usage:
-#   findFiles [find iregex] [search dir]
+#   findFiles iregex dir
 # --------------------------------------
 function findFiles {
-    local regex=${1:-${DEFAULT_SEARCH_FILES_IREGEX}}
-    local directory=${2:-${DEFAULT_SEARCH_DIRECTORY:-.}}
+    local regex=${1}
+    local directory=${2}
     find -E "${directory}" -maxdepth 1 -type f -iregex "${regex}"
 }
 
@@ -241,11 +241,11 @@ trap trapCleanupTempDir EXIT SIGINT
 
 
 # Where to search
-declare DEFAULT_SEARCH_DIRECTORY='.'
+declare SEARCH_DIRECTORY='.'
 
 # What to search
 # The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
-declare DEFAULT_SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 
 
 # --------------------------------------
@@ -277,7 +277,7 @@ function runBatchMode {
     # Find stuff to work on
     # ---------------------------------------
     local -r TODO_TXT=$(createTodoFile)
-    findFiles > "${TODO_TXT}"
+    findFiles "${SEARCH_FILES_IREGEX}" "${SEARCH_DIRECTORY}" > "${TODO_TXT}"
     local -r number_of_images=$(countLinesInFile "${TODO_TXT}")
 
 
