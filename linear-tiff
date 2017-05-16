@@ -128,7 +128,7 @@ function createTodoFile {
 #   require <command>
 # --------------------------------------
 function require  {
-    command -v $1 >/dev/null 2>&1 || e_error "$(printf "Program '%s' required, but it's not installed" "${1}")"
+    command -v "${1}" >/dev/null 2>&1 || e_error "$(printf "Program '%s' required, but it's not installed" "${1}")"
 }
 
 
