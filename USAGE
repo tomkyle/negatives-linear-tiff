@@ -1,5 +1,5 @@
-DESCRIPTION:  Converts RAW files into linear TIFF files.
-              These utilities are used:
+DESCRIPTION:  Converts RAW files into linear 16bit TIFF files
+              with linear gamma profile. These utilities are used:
 
               - dcraw:        RAW to TIFF conversion
               - ImageMagick:  B/W grayscaling, TIFF resizing, ZIP compression
@@ -7,34 +7,42 @@ DESCRIPTION:  Converts RAW files into linear TIFF files.
 
 USAGE:        Batch mode: Process all RAW files in current directory:
               $ linear-tiff -a [OPTIONS]
+              $ linear-tiff --all [OPTIONS]
 
               Process one or more RAW file(s):
               $ linear-tiff [OPTIONS] FILE [other FILE(s)]
 
 OPTIONS:
--a            Turn on  batch mode: All RAW files will be processed.
+-a, --all     Turn on  batch mode: All RAW files will be processed.
               GNU parallel is used to process as many images at the same time
               as CPU cores are available.
 
--d            Desaturate colors, which is recommended for B/W negatives.
+-d, --desaturate
+              Desaturate colors, which is recommended for B/W negatives.
               Converts dcraw's TIFF output to 16-bit grayscale,
               applying a linear gamma 1.0 ICC profile (Gray-elle-V4-g10.icc).
               Grayscaling saves up to 60% in file size.
               If omitted, the TIFF files remain color-profiled (sRGB).
 
--f direction  Mirror the image vertically or horizontally.
+-f direction, --flipflop direction
+              Mirror the image vertically or horizontally.
               Possible values are:
 
-              flip - mirror upside-down
-              flop - mirror in the horizontal direction
-                     This is the way to go when your negatives
-                     have been digitalized on their emulsion (back) side.
+              flip     - mirror upside-down
+              flop     - mirror in the horizontal direction
+                         This is the way to go when your negatives
+                         have been digitalized on their emulsion (back) side.
+              flipflop - ... guess!
 
--o path       Output directory. Defaults to current working dir.
+-h, --help    Display this help text
 
--r pixel      Resize larger side to this pixel length, preserving aspect ratio.
+-o path, --output path
+              Output directory. Defaults to current working dir.
 
--v            Turn on dcraw's verbous mode.
+-r pixel, --resize pixel
+              Resize larger side to this pixel length, preserving aspect ratio.
+
+-v, --verbous Turn on dcraw's verbous mode.
 
 HOMEPAGE:     <https://github.com/tomkyle/negatives-linear-tiff>
 

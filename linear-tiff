@@ -22,9 +22,9 @@
 
 
 
-# ---------------------------------------------------------
+# ======================================
 # Runtime Environment
-# ---------------------------------------------------------
+# ======================================
 
 set -o errexit
 set -o nounset
@@ -32,400 +32,477 @@ set -o pipefail
 # set -o xtrace
 
 
-# ======================================
-#  The main program
-# ======================================
+# --------------------------------------
+# User settings:
+# These settings can be set with command line arguments.
+# --------------------------------------
 
-function main {
+# Verbous mode:
+# Disabled per default; enable with -v flag
+declare -i verbous_mode=0;
 
-  function exit_err {
-    echo >&2 "${@}"; exit 1;
-  }
+# Grayscale output image:
+# Disabled per default (0)
+# Set to 1 to enable or use -d flag
+declare -i desaturate_colors=0
 
-  function require  {
-    command -v $1 >/dev/null 2>&1 || exit_err "Program '${1}' required, but it's not installed";
-  }
+# Resize output image:
+# Disabled per default (0)
+# Use with -r <width>
+# or set this value to any pixel width
+declare -i resize_width=0
 
+# Mirror output image horizontally or vertically.
+# Disabled per default ("")
+# Use with "-f flip|flop|flipflop"
+# or set value here.
+declare flipflop_positive=""
 
-  # --------------------------------------
-  # Requirements
-  # --------------------------------------
-
-  # Homebrew dependencies
-  require dcraw
-  require parallel
-  require mogrify
-  require color-profiles
-
-  # System commands
-  require getconf
-  require brew
-  require dirname
-  require basename
-  require getopts
+# Where to store the output images.
+# Default ist current work directory.
+declare output_directory="${PWD}"
 
 
-  # ======================================
-  #  Prerequisites
-  # ======================================
+# --------------------------------------
+# Global settings
+# --------------------------------------
 
-
-  # --------------------------------------
-  # Directories
-  # --------------------------------------
-
-  # Directory where this script lives in
-  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-  SCRIPT_NAME=$(basename $0)
-
-  # Consistent package location
-  HOMEBREW_OPT_DIR=$(brew --prefix $(basename $0))
-  # Hack for development purposes
-  # HOMEBREW_OPT_DIR=$SCRIPT_DIR
-
-
-  # --------------------------------------
-  # Search files
-  # --------------------------------------
-
-  # Files to work on
-  # The regex shown here must be suitable for regex find'ing:
-  # -iregex '.*\.(nef|raw|cr2)'
-  SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
-
-  # Where to search
-  SEARCH_DIR="."
-
-
-  # --------------------------------------
-  # Pathes to ICC profiles
-  # --------------------------------------
-
-  # Linear Gamma 1.0 Gray profile
-  # Applied when output is converted to Grayscale
-  GRAY_ICC_PROFILE_PATH=$(color-profiles gray-linear )
-
-  # Linear Gamma 1.0 sRGB profile
-  # Applied when output is NOT converted to Grascale.
-  # Replaces the ICC profile dcraw applied.
-  LINEAR_SRGB_ICC_PROFILE_PATH=$(color-profiles srgb-linear )
-
-
-
-  # --------------------------------------
-  # DCRAW settings
-  # --------------------------------------
-
-
-  # Clip highlights method
-  #
-  # -H 0 Clip all highlights to solid white (default).
-  # -H 5 as a compromise
-  DCRAW_HIGHLIGHTS_VALUE=5
-
-
-  # Bayer demosaicing algorithm dcraw should use
-  #
-  # -q 0  Use high-speed, low-quality bilinear interpolation.
-  # -q 1  Variable Number of Gradients (VNG) interpolation.
-  # -q 2  Patterned Pixel Grouping (PPG) interpolation.
-  # -q 3  Adaptive Homogeneity-Directed (AHD) interpolation.
-  # Leave blank when needed.
-  DCRAW_BAYER_DEMOSAIC_VALUE=3
-
-
-  # dcraw's output colorspace
-  #
-  # 0   Raw color (unique to each camera)
-  # 1   sRGB D65 (default)
-  # 2   Adobe RGB (1998) D65
-  # 3   Wide Gamut RGB D65
-  # 4   Kodak ProPhoto RGB D65
-  # 5   XYZ
-  # 6   ACES
-  DCRAW_COLORSPACE_VALUE=1
-
-
-  # Dcraw's image flipping
-  #
-  # Disable with "-t 0"
-  # Leave blank to flip automatically.
-  DCRAW_FLIP_IMAGE="-t 0"
-
-
-  # White balance
-  #
-  # -w White balance according to camera settings
-  #    at the moment of the shot
-  DCRAW_WHITE_BALANCE="-w"
-
-
-  # DCRAW output
-  #
-  # Default extension of dcraw's TIFF output
-  DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
-
-
-
-  # --------------------------------------
-  # Internal use
-  # --------------------------------------
-
-  # Formatting stuff
-  DIVIDER_LINE="------------------------------------------"
-  C_WHITE='\033[1;37m'
-  C_RED='\033[0;31m'
-  C_GREEN='\033[0;32m'
-  C_BLUE='\033[1;34m'
-  NC='\033[0m' # No Color
-
-  # Informative files
-  LICENSE_FILE="LICENSE"
-  USAGE_FILE="USAGE"
-  CREDITS_FILE="CREDITS"
-
-
-  # ======================================
-  #  Script parameter handling
-  # ======================================
-
-  # --------------------------------------
-  # Output small doc if no parameter given
-  # --------------------------------------
-  if [ "$#" -eq 0 ]; then
-    if [ -f "${HOMEBREW_OPT_DIR}/${USAGE_FILE}" ]; then
-      cat "${HOMEBREW_OPT_DIR}/${USAGE_FILE}"
-    else
-      cat "${SCRIPT_DIR}/${USAGE_FILE}"
+# Default Exit or SIGINT(2) handler
+function trapCleanupTempDir() {
+    tmp_dir_to_clean="${WORK_TMPDIR:-}"
+    if [ -d "${tmp_dir_to_clean}" ]; then
+        printf "\nRemove temporary directory %s ... " "${tmp_dir_to_clean}"
+        rm -Rf "${tmp_dir_to_clean}" && e_success
     fi
+}
+trap trapCleanupTempDir EXIT SIGINT
 
-    echo;
-    if [ -f "${HOMEBREW_OPT_DIR}/${CREDITS_FILE}" ]; then
-      cat "${HOMEBREW_OPT_DIR}/${CREDITS_FILE}"
-    else
-      cat "${SCRIPT_DIR}/${CREDITS_FILE}"
-    fi
-    echo;
+
+# Where to search
+declare SEARCH_DIRECTORY='.'
+
+# What to search
+# The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
+declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+
+
+
+# --------------------------------------
+# Immutables
+# --------------------------------------
+
+# List of possible script arguments (getopts)
+# Very much like getopts, expected short options should be appended to the
+# string here. Any option followed by a ':' takes a required argument.
+readonly OPTIONS_LIST="ahdvf:o:r:"
+
+
+# Internal Field Separator
+### While this is recommended in "best-practice tutorials",
+### this breaks calling dcraw and mogrify. Better let this commented-out.
+readonly DEFAULT_IFS="${IFS}"
+readonly SAFER_IFS=$'\n\t'
+#IFS="${SAFER_IFS}"
+
+
+# Filesystem basics
+readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+readonly SCRIPT_NAME=$(basename "${0}")
+
+# Consistent package location
+readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
+# Hack for development purposes
+# HOMEBREW_OPT_DIR=$SCRIPT_DIR
+
+# Prepare (but not create) a new temp directory
+readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
+
+
+
+# Formatting stuff
+readonly DIVIDER_LINE="------------------------------------------"
+readonly C_WHITE='\033[1;37m'
+readonly C_RED='\033[0;31m'
+readonly C_GREEN='\033[0;32m'
+readonly C_BLUE='\033[1;34m'
+readonly C_GRAY='\033[1;30m'
+readonly C_ORANGE=$(tput setaf 3)
+readonly NC='\033[0m' # No Color
+
+# Informative files
+readonly LICENSE_FILE="LICENSE"
+readonly USAGE_FILE="USAGE"
+readonly CREDITS_FILE="CREDITS"
+
+
+# --------------------------------------
+# Output and formatting functions
+# --------------------------------------
+
+
+# Error message and error exit, redirecting stdout to stderr
+function e_error {
+    echo -e >&2 "${C_RED}✖ ${*}${NC}";
     exit 1;
+}
+
+function e_info {
+  echo -e "${C_BLUE}${*}${NC}"
+}
+
+function e_warning {
+  echo -e "${C_ORANGE}➜ ${*}${NC}"
+}
+
+function e_success () {
+  echo -e "${C_GREEN}✔ ${*}${NC}"
+}
+
+function e_result () {
+  echo -e "${C_GREEN}${*}${NC}"
+}
+
+function e_verbous () {
+  if [ $verbous_mode -gt 0 ]; then
+    echo -e "${C_GRAY}${*}${NC}"
   fi
+}
 
 
-  # --------------------------------------
-  # Default parameter values.
-  # May be overriden by user.
-  # --------------------------------------
-
-  BATCH_MODE=0
-  VERBOUS_MODE=0
-  OUTPUT_DIRECTORY="${PWD}"
-  DESATURATE_COLORS=0
-  RESIZE_IMAGE=0
-  FLIPFLOP_POSITIVE=""
-
-  # --------------------------------------
-  # Parse parameters
-  # --------------------------------------
-
-  while getopts adf:vo:r: option
-  do
-    case "${option}"
-    in
-      a)  BATCH_MODE=1;;
-      d)  DESATURATE_COLORS=1;;
-      f)  FLIPFLOP_POSITIVE="${OPTARG}";;
-      v)  VERBOUS_MODE=1;;
-      o)  OUTPUT_DIRECTORY=${OPTARG};;
-      r)  RESIZE_IMAGE=${OPTARG};;
-      *)  exit_err "Unknown option used. Run ${SCRIPT_NAME} without parameters to get a list of all options."
-          ;;
-    esac
-  done
-
-  shift $(( OPTIND - 1 ));
+# --------------------------------------
+# Create Todo file
+# --------------------------------------
+function createTodoFile {
+  mkdir -p "${WORK_TMPDIR}"
+  TODO_TXT="${WORK_TMPDIR}/rawfiles-todo.txt"
+  touch "${TODO_TXT}"
+  echo "${TODO_TXT}"
+}
 
 
+# --------------------------------------
+# Check if given command is installed, exit otherwise
+#
+# Usage:
+#   require <command>
+# --------------------------------------
+function require  {
+    command -v "${1}" >/dev/null 2>&1 || e_error "$(printf "Program '%s' required, but it's not installed" "${1}")"
+}
 
 
+# --------------------------------------
+# Count lines in file
+#
+# Usage:
+#   countLinesInFile <file>
+# --------------------------------------
+function countLinesInFile {
+    wc -l < "${1}" | sed -e 's/^[ \t]*//'
+}
 
-
-
-
-  # ======================================
-  #  Batch processing: parameter -a
-  # ======================================
-  if [ $BATCH_MODE -eq  1 ]; then
-
-    # ---------------------------------------
-    # The TODO-File in temp directory
-    # ---------------------------------------
-    WORK_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { exit_err "Failed to create temp directory"; }
-    TODO_TXT="${WORK_TMPDIR}/rawfiles-todo.txt"
-    >"${TODO_TXT}"
-
-
-    START_TIME=$SECONDS
-
-
-    # ---------------------------------------
-    # Find Files to process
-    # ---------------------------------------
-
-    find -E "${SEARCH_DIR}" -maxdepth 1 -type f -iregex "${SEARCH_FILES_IREGEX}" > "${TODO_TXT}"
-    NUMOFIMAGES=$(cat "${TODO_TXT}" | wc -l | sed -e 's/^[ \t]*//')
-
-
-    # ---------------------------------------
-    # Print some information
-    # ---------------------------------------
-
-    if [ $VERBOUS_MODE -eq 1 ]; then
-      printf "${C_BLUE}Files to process:${NC}\n"
-      cat "${TODO_TXT}"
-      echo;
+# --------------------------------------
+# catFirstFound
+#
+# Outputs given file in first matching location.
+#
+# Usage:
+#   catFirstFound <file>
+#
+# --------------------------------------
+function catFirstFound {
+    local file_to_cat="${1}"
+    if [ -f "${HOMEBREW_OPT_DIR}/${file_to_cat}" ]; then
+        cat "${HOMEBREW_OPT_DIR}/${file_to_cat}"
+    else
+        cat "${SCRIPT_DIR}/${file_to_cat}"
     fi
+    echo;
+}
 
+
+# --------------------------------------
+# findFiles
+#
+# Usage:
+#   findFiles iregex dir
+# --------------------------------------
+function findFiles {
+    local regex=${1}
+    local directory=${2}
+    find -E "${directory}" -maxdepth 1 -type f -iregex "${regex}"
+}
+
+
+# --------------------------------------
+# displayHelp
+# --------------------------------------
+function displayHelp {
+    catFirstFound "${USAGE_FILE}"
+    catFirstFound "${CREDITS_FILE}"
+    exit 1;
+}
+
+
+# --------------------------------------
+# _require_argument()
+#
+# Usage:
+#   _require_argument <option> <argument>
+#
+# If <argument> is blank or another option, print an error message
+#
+# This function is stolen from William Melody's bash-boilerplate
+# <https://github.com/alphabetum/bash-boilerplate>
+# --------------------------------------
+
+_require_argument() {
+    # Set local variables from arguments.
+    #
+    # NOTE: 'local' is a non-POSIX bash feature and keeps the variable local to
+    # the block of code, as defined by curly braces. It's easiest to just think
+    # of them as local to a function.
+    local _option="${1:-}"
+    local _argument="${2:-}"
+
+    if [[ -z "${_argument}" ]] || [[ "${_argument}" =~ ^- ]]
+    then
+        e_error "$(printf "Option requires a argument: %s\n" "${_option}")"
+    fi
+}
+
+
+
+
+# ======================================
+#  runBatchMode
+# ======================================
+
+function runBatchMode {
+
+    # Stores all function parameters for use with GNU Parallel
+    local -r FUNC_ARGUMENTS=("${@}")
+
+    # For statistic purposes
+    local START_TIME=$SECONDS
+    local -r CPUs=$(getconf _NPROCESSORS_ONLN)
 
     # ---------------------------------------
-    # Build param string for recursive calls
+    # Find stuff to work on
     # ---------------------------------------
-
-    PARAMS=""
-    if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then PARAMS="${PARAMS} -o ${OUTPUT_DIRECTORY}"; fi
-    if [ $VERBOUS_MODE -eq 1 ]; then PARAMS="${PARAMS} -v"; fi
-    if [ $DESATURATE_COLORS -eq 1 ]; then PARAMS="${PARAMS} -d"; fi
-    if [ $RESIZE_IMAGE -gt 0 ]; then PARAMS="${PARAMS} -r ${RESIZE_IMAGE}"; fi
-    if [ ! -z "${FLIPFLOP_POSITIVE}" ]; then PARAMS="${PARAMS} -f ${FLIPFLOP_POSITIVE}"; fi
+    local -r TODO_TXT=$(createTodoFile)
+    findFiles "${SEARCH_FILES_IREGEX}" "${SEARCH_DIRECTORY}" > "${TODO_TXT}"
+    local -r number_of_images=$(countLinesInFile "${TODO_TXT}")
 
 
     # ---------------------------------------
     # Start parallel processing
     # ---------------------------------------
-    printf "${C_BLUE}Process ${NUMOFIMAGES} images, using GNU Parallel:${NC}\n"
-    cat "${TODO_TXT}" | parallel "$0" "${PARAMS}" {}
+    printf "Process these %s images, using GNU Parallel:\n" "${number_of_images}"
+    e_verbous "$(cat "${TODO_TXT}")"
+    parallel "$0" "${FUNC_ARGUMENTS[@]}" {} < "${TODO_TXT}"
 
 
     # ---------------------------------------
+    # Outro
+    # ---------------------------------------
+
     # Some stats
-    # ---------------------------------------
-    CPUs=$(getconf _NPROCESSORS_ONLN)
-    ELAPSED_TIME=$(($SECONDS - $START_TIME))
+    local -r ELAPSED_TIME=$((SECONDS - START_TIME))
 
-
-    # ---------------------------------------
-    # Remove crap
-    # ---------------------------------------
-    rm -Rf "${WORK_TMPDIR}"
-
-
-    # ---------------------------------------
-    # Write outro
-    # ---------------------------------------
     echo $DIVIDER_LINE
-    printf "${C_BLUE}Some stats:${NC}\n"
-    echo "CPUs used:     ${CPUs}"
-    echo "Elapsed time:  $(($ELAPSED_TIME/60))min $(($ELAPSED_TIME%60))sec"
-    echo "Done:          ${NUMOFIMAGES} images"
-
-    unset require TODO_TXT WORK_TMPDIR SEARCH_FILES_IREGEX ELAPSED_TIME START_TIME NUMOFIMAGES CPUs
-    unset OUTPUT_DIRECTORY PARAMS VERBOUS_MODE DESATURATE_COLORS NUMOFIMAGES SEARCH_DIR RESIZE_IMAGE;
+    echo "Some stats:"
+    printf "CPUs used:     %s\n"          "${CPUs}"
+    printf "Elapsed time:  %smin %ssec\n" $((ELAPSED_TIME/60)) $((ELAPSED_TIME%60))
+    printf "Done:          %s images\n"   "${number_of_images}"
 
 
+}
 
 
-  # ================================================
-  #  No-batch mode; process file(s) in CLI parameter
-  # ================================================
-  else
+# ======================================
+#  convertRawPhotos
+#
+#  Usage: convertRawPhotos rawfile [rawfiles ...]
+# ======================================
 
+function convertRawPhotos {
+
+    # --------------------------------------
+    # Requirements
+    # --------------------------------------
+
+    # Homebrew dependencies
+    require dcraw
+    require parallel
+    require mogrify
+    require color-profiles
+
+    # System commands
+    require getconf
+    require brew
+    require dirname
+    require basename
+    require getopts
+
+
+    # --------------------------------------
+    # Files to work on.
+    # --------------------------------------
+
+    local -r INPUT_FILES=("${@}")
+
+
+    # --------------------------------------
+    # DCRAW settings
+    # --------------------------------------
+
+
+    # Dcraw output
+    #
+    # Default extension of dcraw's TIFF output
+    local DCRAW_DEFAULT_TIFF_EXTENSION
+    DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
+
+
+    # Clip highlights method
+    #
+    # -H 0 Clip all highlights to solid white (default).
+    # -H 5 as a compromise
+    local DCRAW_HIGHLIGHTS_VALUE
+    DCRAW_HIGHLIGHTS_VALUE=5
+
+
+    # Bayer demosaicing algorithm dcraw should use
+    #
+    # -q 0  Use high-speed, low-quality bilinear interpolation.
+    # -q 1  Variable Number of Gradients (VNG) interpolation.
+    # -q 2  Patterned Pixel Grouping (PPG) interpolation.
+    # -q 3  Adaptive Homogeneity-Directed (AHD) interpolation.
+    # Leave blank when needed.
+    local DCRAW_BAYER_DEMOSAIC_VALUE
+    DCRAW_BAYER_DEMOSAIC_VALUE=3
+
+
+    # dcraw's output colorspace
+    #
+    # 0   Raw color (unique to each camera)
+    # 1   sRGB D65 (default)
+    # 2   Adobe RGB (1998) D65
+    # 3   Wide Gamut RGB D65
+    # 4   Kodak ProPhoto RGB D65
+    # 5   XYZ
+    # 6   ACES
+    local DCRAW_COLORSPACE_VALUE
+    DCRAW_COLORSPACE_VALUE=1
+
+
+    # Dcraw's image flipping
+    #
+    # Disable with "-t 0"
+    # Leave blank to flip automatically.
+    local DCRAW_FLIP_IMAGE
+    DCRAW_FLIP_IMAGE="-t 0"
+
+
+    # Dcraw's White balance
+    #
+    # -w White balance according to camera settings
+    #    at the moment of the shot
+    local DCRAW_WHITE_BALANCE
+    DCRAW_WHITE_BALANCE="-w"
+
+
+    # --------------------------------------
+    # Default ICC profile.
+    # See DCRAW_COLORSPACE_VALUE
+    # --------------------------------------
+    local ICC_PROFILE_PATH
+    ICC_PROFILE_PATH=$(color-profiles srgb-linear )
 
 
     # ---------------------------------------
     # Build dcraw parameters
     # ---------------------------------------
-    DCRAW_OPTIONS=""
+    local dcraw_options=""
 
     # Add white balance setting
     if [ ! -z "${DCRAW_WHITE_BALANCE}" ]; then
-      DCRAW_OPTIONS="${DCRAW_OPTIONS} ${DCRAW_WHITE_BALANCE}"
+        dcraw_options+=" ${DCRAW_WHITE_BALANCE}"
     fi;
 
     # Add flip image setting
     if [ ! -z "${DCRAW_FLIP_IMAGE}" ]; then
-      DCRAW_OPTIONS="${DCRAW_OPTIONS} ${DCRAW_FLIP_IMAGE}"
+        dcraw_options+=" ${DCRAW_FLIP_IMAGE}"
     fi;
 
     # How to handle highlights
     if [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ]; then
-      DCRAW_OPTIONS="${DCRAW_OPTIONS} -H ${DCRAW_HIGHLIGHTS_VALUE}"
+        dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
     fi;
 
     # Add demosaicing algorithm number
-    DCRAW_OPTIONS="${DCRAW_OPTIONS} -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
+    dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
 
     # Colorspace
-    DCRAW_OPTIONS="${DCRAW_OPTIONS} -o ${DCRAW_COLORSPACE_VALUE}"
+    dcraw_options+=" -o ${DCRAW_COLORSPACE_VALUE}"
 
     # 16 bit linearity, same as "-6 -W -g 1 1"
-    DCRAW_OPTIONS="${DCRAW_OPTIONS} -4"
+    dcraw_options+=" -4"
 
     # TIFF output
-    DCRAW_OPTIONS="${DCRAW_OPTIONS} -T"
+    dcraw_options+=" -T"
 
-    # if [ "${VERBOUS_MODE}" -gt 0 ]; then
-    #   DCRAW_OPTIONS="-v ${DCRAW_OPTIONS}"
-    # fi
+    ### This is tooo noisy....
+    # if [ "${verbous_mode}" -gt 0 ]; then
+    #   dcraw_options="-v ${dcraw_options}"
+    #fi
 
-
-    # ---------------------------------------
-    #  Build mogrify's options string. Start blank.
-    # ---------------------------------------
-    MOGRIFY_OPTIONS=""
 
 
 
     # ---------------------------------------
+    #  Build mogrify's options string.
+    # ---------------------------------------
+    local mogrify_options=""
+
+
     # Flip or flop the image, if required.
-    # ---------------------------------------
-    if [ ! -z "${FLIPFLOP_POSITIVE}" ]; then
-      MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -${FLIPFLOP_POSITIVE}"
+    if [ ! -z "${flipflop_positive}" ]; then
+        if [ "${flipflop_positive}" = "flipflop" ]; then
+            mogrify_options+=" -flip -flop"
+        else
+            mogrify_options+=" -${flipflop_positive}"
+        fi
     fi
 
 
-    # ---------------------------------------
     # Resize image on its larger side
-    # ---------------------------------------
-    if [ $RESIZE_IMAGE -gt 0 ]; then
-      MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -resize ${RESIZE_IMAGE}x${RESIZE_IMAGE}>"
+    if [ $resize_width -gt 0 ]; then
+        mogrify_options+=" -resize ${resize_width}x${resize_width}>"
     fi
 
 
-    # ---------------------------------------
     #  Desaturate colors, if required:
     #  Convert to Grayscale with Gray profile embedded with gamma 1.0
-    #  Otherwise, apply linear sRGB with gamma 1.0 profile
-    #
     #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
-    # ---------------------------------------
-
-    if [ $DESATURATE_COLORS -eq 1 ]; then
-      MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -modulate 100,0 -colorspace Gray -profile ${GRAY_ICC_PROFILE_PATH}"
-    else
-      MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -profile ${LINEAR_SRGB_ICC_PROFILE_PATH}"
+    if [ $desaturate_colors -eq 1 ]; then
+        # Linear Gamma 1.0 Gray profile
+        ICC_PROFILE_PATH=$(color-profiles gray-linear )
+        mogrify_options+=" -modulate 100,0 -colorspace Gray"
     fi
+    mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
 
 
-    # ---------------------------------------
     #  Compress image
-    # ---------------------------------------
-    MOGRIFY_OPTIONS="${MOGRIFY_OPTIONS} -compress Zip "
-
+    mogrify_options+=" -compress Zip "
 
 
     # ---------------------------------------
     # Create output directory if needed.
     # ---------------------------------------
-    if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then
-      mkdir -p "${OUTPUT_DIRECTORY}";
+    if [ "${output_directory}" != "${PWD}" ]; then
+        mkdir -p "${output_directory}";
     fi
 
 
@@ -433,108 +510,268 @@ function main {
     #  The Loop: Process each file given
     # =============================================================
 
-    for INPUT_FILE in "$@"
+    for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
-      # ---------------------------------------
-      #  If $INPUT_FILE is regular file:
-      # ---------------------------------------
-      if [ -f "${INPUT_FILE}" ]; then
-
         echo $DIVIDER_LINE
+
+        # ---------------------------------------
+        # Just in case $RAW_PHOTO is NOT a regular file
+        # ---------------------------------------
+        if [ ! -f "${RAW_PHOTO}" ]; then
+            e_warning "$(printf '%s is not a regular file.' "${RAW_PHOTO}")"
+            continue;
+        fi
 
 
         # ---------------------------------------
         # Filename magic
         # ---------------------------------------
-        INPUT_FILE_EXTENSION="${INPUT_FILE##*.}";
-        INPUT_FILE_BASENAME="${INPUT_FILE%.$INPUT_FILE_EXTENSION}"
-        INPUT_FILE_BASENAME="${INPUT_FILE_BASENAME##*/}" # remove trailing slash
+        local input_file_extension="${RAW_PHOTO##*.}";
+        local input_file_basename="${RAW_PHOTO%.$input_file_extension}"
+        input_file_basename="${input_file_basename##*/}" # remove trailing slash
 
         # Build output filename as dcraw would do
-        OUTPUT_FILE="${INPUT_FILE_BASENAME}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
-        OUTPUT_JPEG="${INPUT_FILE_BASENAME}.jpg"
-
+        local output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
 
 
         # ---------------------------------------
         # Show some image info
         # ---------------------------------------
 
-        printf "${C_WHITE}"
-        if [ "${VERBOUS_MODE}" -eq 1 ]; then
-          dcraw -i -v "${INPUT_FILE}"
-          echo;
-        else
-          dcraw -i "${INPUT_FILE}"
-        fi
-        printf "${NC}\n"
-
+        e_info "$(dcraw -i "${RAW_PHOTO}")"
+        e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
 
 
 
         # ---------------------------------------
         # Call dcraw
         # ---------------------------------------
-        printf "Create linear TIFF: "
-        if [ $VERBOUS_MODE -gt 0 ]; then
-          printf "\ndcraw $DCRAW_OPTIONS ${INPUT_FILE}\n..."
-        fi;
-        dcraw $DCRAW_OPTIONS "${INPUT_FILE}" && echo "Done."
-        if [ $VERBOUS_MODE -gt 0 ]; then printf "\n"; fi
+        printf "Create linear TIFF with dcraw: "
+        e_verbous "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
+        dcraw $dcraw_options "${RAW_PHOTO}" && e_success
 
 
 
         # ---------------------------------------
-        # On Success, i.e. dcraw has written an output file:
+        # Just in case dcraw has NOT written an output file:
         # ---------------------------------------
-        if [ -f "${OUTPUT_FILE}" ]; then
+        if [ ! -f "${output_tiff}" ]; then
+            e_warning "$(printf "Hmmm. Expected dcraw to have written '%s'; In fact, this file does not exist?\n" "${output_tiff}")"
+            continue
+        fi
 
-
-          # ---------------------------------------
-          #  Handle output file
-          # ---------------------------------------
-          printf "Mangle output file through mogrify: "
-          if [ $VERBOUS_MODE -gt 0 ]; then
-            printf "\nmogrify ${MOGRIFY_OPTIONS}\n..."
-          fi;
-          mogrify ${MOGRIFY_OPTIONS} "${OUTPUT_FILE}" && echo "Done."
-          if [ $VERBOUS_MODE -gt 0 ]; then printf "\n"; fi
-
-
-          # ---------------------------------------
-          # Move output file to directory, if required
-          # ---------------------------------------
-          if [ "${OUTPUT_DIRECTORY}" != "${PWD}" ]; then
-            mv "${OUTPUT_FILE}" "${OUTPUT_DIRECTORY}/"
-            printf "Result: ${C_GREEN}${OUTPUT_DIRECTORY}/${OUTPUT_FILE}${NC}\n"
-          else
-            printf "Result: ${C_GREEN}${OUTPUT_FILE}${NC}\n"
-          fi
 
         # ---------------------------------------
-        # On error:
+        #  Handle output file
         # ---------------------------------------
+        printf "Mangle output file through mogrify: "
+        e_verbous "$(printf "\nmogrify %s " "${mogrify_options}")"
+        mogrify ${mogrify_options} "${output_tiff}" && e_success ""
+        if [ $verbous_mode -gt 0 ]; then
+            echo;
+        fi
+
+
+
+        # ---------------------------------------
+        # Move output file to directory, if required
+        # ---------------------------------------
+        if [ "${output_directory}" != "${PWD}" ]; then
+            mv "${output_tiff}" "${output_directory}/"
+            e_result "$(printf "Result: %s/%s" "${output_directory}" "${output_tiff}")"
         else
-          printf "${C_RED}Hmmm. Expected dcraw to have written '${OUTPUT_FILE}'; In fact, this file does not exist?${NC}\n"
-        fi;
+            e_result "$(printf "Result: %s$" "${output_tiff}")"
+        fi
 
-        # Go on looping...
 
-      # ---------------------------------------
-      #  $INPUT_FILE is NOT a regular file
-      # ---------------------------------------
-      else
-        printf "${C_RED}${INPUT_FILE} is not a regular file.${NC}\n"
-      fi;
-
-      # screen readability
-      echo;
+        # screen readability
+        echo;
     done
 
 
-  fi;
 
-  exit 0
+    exit 0
 }
 
-main "$@"
+
+
+
+
+# ======================================
+#  The main procedure
+# ======================================
+
+function main {
+
+    # ---------------------------------------
+    # Print short help if no arguments
+    # ---------------------------------------
+    if [ "$#" -eq 0 ]; then
+        printf "Run '%s --help' or with '-h' to get a list of all options.\n" "${SCRIPT_NAME}"
+        exit 1
+    fi
+
+
+
+    # ---------------------------------------
+    # Normalize options
+    #
+    # This section is stolen from William Melody's bash-boilerplate
+    # <https://github.com/alphabetum/bash-boilerplate>
+    # ---------------------------------------
+
+    # iterate over options, breaking -ab into -a -b and --foo=bar into --foo bar
+    # also turns -- into --endopts to avoid issues with things like '-o-', the '-'
+    # should not indicate the end of options, but be an invalid option (or the
+    # argument to the option, such as wget -qO-)
+    unset options
+    # while the number of arguments is greater than 0
+    while ((${#}))
+    do
+      case ${1} in
+        # if option is of type -ab
+        -[!-]?*)
+          # loop over each character starting with the second
+          for ((i=1; i<${#1}; i++))
+          do
+            # extract 1 character from position 'i'
+            c=${1:i:1}
+            # add current char to options
+            options+=("-${c}")
+
+            # if option takes a required argument, and it's not the last char
+            # make the rest of the string its argument
+            if [[ ${OPTIONS_LIST} = *"${c}:"* && ${1:i+1} ]]
+            then
+              options+=("${1:i+1}")
+              break
+            fi
+          done
+          ;;
+        # if option is of type --foo=bar, split on first '='
+        --?*=*)
+          options+=("${1%%=*}" "${1#*=}")
+          ;;
+        # end of options, stop breaking them up
+        --)
+          options+=(--endopts)
+          shift
+          options+=("${@}")
+          break
+          ;;
+        # otherwise, nothing special
+        *)
+          options+=("${1}")
+          ;;
+      esac
+
+      shift
+    done
+    # set new positional parameters to altered options. Set default to blank.
+    set -- "${options[@]:-}"
+    unset options
+
+
+    # ---------------------------------------
+    # Parse Options
+    # ---------------------------------------
+
+    # Initialize program option variables.
+    declare -i use_batch_mode=0
+    declare -i print_help=0
+
+    # Keeps all CLI arguments without -a or --all.
+    # Used by runBatchMode when letting GNU Parallel
+    # call this very script.
+    local recursion_arguments=""
+
+    # Keeps anything that does not look like an option.
+    local image_parameters=""
+
+
+    # getopts and getopts have inconsistent behavior, so using a simple home-brewed
+    # while loop. This isn't perfectly compliant with POSIX, but it's close enough
+    # and this appears to be a widely used approach.
+    #
+    # More info:
+    #   http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
+    #   http://stackoverflow.com/a/14203146
+    #   http://stackoverflow.com/a/7948533
+    #
+    # This section is stolen from William Melody's bash-boilerplate
+    # <https://github.com/alphabetum/bash-boilerplate>
+    while [ ${#} -gt 0 ]
+    do
+        __option="${1:-}"
+        __maybe_param="${2:-}"
+
+        case "${__option}" in
+            -h|--help)
+                print_help=1
+                ;;
+            -a|--all)
+                use_batch_mode=1
+                ;;
+            -d|--desaturate)
+                desaturate_colors=1
+                recursion_arguments+=" ${__option}"
+                ;;
+            -v|--verbous)
+                verbous_mode=1
+                recursion_arguments+=" ${__option}"
+                ;;
+            -f|--flipflop)
+                _require_argument "${__option}" "${__maybe_param}"
+                flipflop_positive="${__maybe_param}"
+                recursion_arguments+=" ${__option} ${__maybe_param}"
+                shift
+                ;;
+            -o|--output)
+                _require_argument "${__option}" "${__maybe_param}"
+                output_directory="${__maybe_param}"
+                recursion_arguments+=" ${__option} ${__maybe_param}"
+                shift
+                ;;
+            -r|--resize)
+                _require_argument "${__option}" "${__maybe_param}"
+                resize_width=${__maybe_param}
+                recursion_arguments+=" ${__option} ${__maybe_param}"
+                shift
+                ;;
+            --endopts)
+                # Terminate option parsing.
+                break
+                ;;
+            -*)
+                # Assume option because of leading "-"
+                e_error "$(printf "Unexpected option: %s\n" "${__option}")"
+                ;;
+            *)
+                # "Anything else must be an image parameter"
+                # This is a WORKAROUND, as without this "*)" block any given image parameters
+                # after the arguments seem to get lost (i.e., stuck in last $__option checked).
+                image_parameters+=" ${__option}"
+                ;;
+        esac
+        shift
+
+    done
+
+
+
+    # ---------------------------------------
+    # Kind of main controller:
+    # ---------------------------------------
+
+    if [ $print_help -gt 0 ]; then
+        displayHelp
+    fi;
+
+    if [ $use_batch_mode -gt 0 ]; then
+        runBatchMode ${recursion_arguments}
+    else
+        convertRawPhotos ${image_parameters}
+    fi;
+
+}
+main "${@}"
