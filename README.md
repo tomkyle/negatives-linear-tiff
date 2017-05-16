@@ -117,6 +117,7 @@ $ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstac
 
 ## New Features
 
+### v1.1.0
 - **Long option names** for those preferring self-explanatory options like `--resize`, `--desaturate` and so on.
 - **Improved code quality:** Wrapped main features in single functions; Adhere to Bash best practices and coding standards.
 
