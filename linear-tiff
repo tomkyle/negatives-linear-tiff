@@ -680,7 +680,12 @@ function main {
     declare -i use_batch_mode=0
     declare -i print_help=0
 
+    # Keeps all CLI arguments without -a or --all.
+    # Used by runBatchMode when letting GNU Parallel
+    # call this very script.
     local recursion_arguments=""
+
+    # Keeps anything that does not look like an option.
     local image_parameters=""
 
 
@@ -755,7 +760,7 @@ function main {
 
 
     # ---------------------------------------
-    # React on options
+    # Kind of main controller:
     # ---------------------------------------
 
     if [ $print_help -gt 0 ]; then
