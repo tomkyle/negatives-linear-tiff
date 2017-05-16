@@ -39,7 +39,7 @@ set -o pipefail
 # List of possible script arguments (getopts)
 # Very much like getopts, expected short options should be appended to the
 # string here. Any option followed by a ':' takes a required argument.
-readonly OPTIONS_LIST="f:o:r:ahdv"
+readonly OPTIONS_LIST="ahdvf:o:r:"
 
 
 # Internal Field Separator
@@ -662,7 +662,6 @@ function main {
     unset options
 
 
-
     # ---------------------------------------
     # Parse Options
     # ---------------------------------------
@@ -671,9 +670,8 @@ function main {
     declare -i use_batch_mode=0
     declare -i print_help=0
 
-    #local remaining_arguments=""
-    remaining_arguments=""
-    image_parameters=""
+    local recursion_arguments=""
+    local image_parameters=""
 
 
     # getopts and getopts have inconsistent behavior, so using a simple home-brewed
@@ -701,28 +699,28 @@ function main {
                 ;;
             -d|--desaturate)
                 desaturate_colors=1
-                remaining_arguments+=" ${__option}"
+                recursion_arguments+=" ${__option}"
                 ;;
             -v|--verbous)
                 verbous_mode=1
-                remaining_arguments+=" ${__option}"
+                recursion_arguments+=" ${__option}"
                 ;;
             -f|--flipflop)
                 _require_argument "${__option}" "${__maybe_param}"
                 flipflop_positive="${__maybe_param}"
-                remaining_arguments+="${__option} ${__maybe_param}"
+                recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
             -o|--output)
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
-                remaining_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
             -r|--resize)
                 _require_argument "${__option}" "${__maybe_param}"
                 resize_width=${__maybe_param}
-                remaining_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
             --endopts)
@@ -755,7 +753,7 @@ function main {
     fi;
 
     if [ $use_batch_mode -gt 0 ]; then
-        runBatchMode ${remaining_arguments}
+        runBatchMode ${recursion_arguments}
     else
         convertRawPhotos ${image_parameters}
     fi;
