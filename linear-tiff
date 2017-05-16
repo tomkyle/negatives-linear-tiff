@@ -251,21 +251,26 @@ declare DEFAULT_SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 
 function runBatchMode {
 
-    # All parameters to be passed on GNU Parallel call
-    local readonly FUNC_ARGUMENTS="$@"
+    # Stores all function parameters for use with GNU Parallel
+    local readonly FUNC_ARGUMENTS
+    FUNC_ARGUMENTS="$@"
 
-    # Some stats
-    local readonly START_TIME=$SECONDS
+    # For statistic purposes
+    local readonly START_TIME
+    START_TIME=$SECONDS
+    local readonly CPUs
+    CPUs=$(getconf _NPROCESSORS_ONLN)
 
-
-    # ---------------------------------------
-    # Prepare files to work on
-    # ---------------------------------------
-
+    # For working on files
     local readonly TODO_TXT
     TODO_TXT=$(createTodoFile)
-    populateTodoFile "${TODO_TXT}"
     local readonly number_of_images
+
+
+    # ---------------------------------------
+    # Find stuff to work on
+    # ---------------------------------------
+    populateTodoFile "${TODO_TXT}"
     number_of_images=$(countLinesInFile "${TODO_TXT}")
 
 
@@ -277,13 +282,12 @@ function runBatchMode {
     cat "${TODO_TXT}" | parallel "$0" "${FUNC_ARGUMENTS}" {}
     echo;
 
+
     # ---------------------------------------
     # Outro
     # ---------------------------------------
 
     # Some stats
-    local readonly CPUs
-    CPUs=$(getconf _NPROCESSORS_ONLN)
     local readonly ELAPSED_TIME=$(($SECONDS - $START_TIME))
 
     echo $DIVIDER_LINE
