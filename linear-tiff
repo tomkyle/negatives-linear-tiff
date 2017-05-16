@@ -606,10 +606,10 @@ function main {
     # ---------------------------------------
     # Print short help if no arguments
     # ---------------------------------------
-    # if [ "$#" -eq 0 ]; then
-    #     printf "Run '%s --help' or with '-h' to get a list of all options.\n" ${SCRIPT_NAME}
-    #     exit 1
-    # fi
+    if [ "$#" -eq 0 ]; then
+        printf "Run '%s --help' or with '-h' to get a list of all options.\n" "${SCRIPT_NAME}"
+        exit 1
+    fi
 
 
 
