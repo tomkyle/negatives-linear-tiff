@@ -34,7 +34,7 @@ $ brew install tomkyle/negatives/linear-tiff
 
 # Usage
 
-Run *linear-tiff* without parameters to get a short help text:
+Run `linear-tiff --help` or `-h` to display help text. See [options](#options) and [examples](#examples).
 
 ```bash
 $ linear-tiff [options] [-a | file(s)]
@@ -46,21 +46,71 @@ $ linear-tiff [options] [-a | file(s)]
 
 Option | Value | Description
 :------|:------|:------------
--a     |       | All images — process any RAW/NEF/CR2 file in working directory, using GNU Parallel.
--d     |       | Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
--f     | value | Mirror the image vertically and/or horizontally. Possible values are `flop`, `flip` or even `flipflop`. Example: `-f flop`
--o     | path  | Output directory — default is current working directory. Example: `-o results`
--r     | pixel | Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
--v     |       | Verbous mode — show some more information under way.
+`-a, --all`     |       | All images — process any RAW/NEF/CR2 file in working directory, using GNU Parallel.
+`-d, --desaturate`     |       | Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
+`-f, --flipflop`     | value | Mirror the image vertically and/or horizontally. Possible values are `flop` horizontal, `flip` vertical or even `flipflop` (guess what). Example: `-f flop`
+`-h, --help`     |       | Display help text
+`-o, --output`     | path  | Output directory — default is current working directory. Example: `-o results`
+`-r, --resize`     | pixel | Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
+`-v, --verbous`     |       | Verbous mode — show some more information under way.
+
+
+## Examples
+
+**Convert all images** or **list of images** in current working directory using defaults:
+
+```bash
+# All images:
+$ linear-tiff -a 
+$ linear-tiff --all
+
+# List of images:
+$ linear-tiff DSC0001.NEF DSC0002.NEF DSC0003.NEF
+```
+
+**Desaturate** B/W negatives:
+
+```bash
+# These are equal:
+$ linear-tiff -d DSC0001.CR2 DSC0002.CR2
+$ linear-tiff --desaturate DSC0001.CR2 DSC0002.CR2
+
+# And those as well:
+$ linear-tiff -ad
+$ linear-tiff -a --desaturate
+$ linear-tiff --all -d
+$ linear-tiff --all --desaturate
+```
+
+**Resize images:**
+
+```bash
+# These are equal:
+$ linear-tiff -r 2048 DSC0001.CR2 DSC0002.CR2
+$ linear-tiff -a --resize 2048
+```
+
+**Fullstack Conversion:**  
+Resized and horizontally mirrored B/W versions of all images go into ‘fullstack’ directory. Verbous output is showing what's going on.
+
+```bash
+# These are equal:
+$ linear-tiff -adv -r 2048 -f flop -o fullstack
+$ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstack --verbous 
+```
+
 
 # Changelog
+
+## New Features
+
+- **Long option names** for those preferring self-explanatory options like `--resize`, `--desaturate` and so on.
+
 
 
 ## Upcoming Features
 
 These features go into the current major version 1:
-
-- **Long option names** for those preferring self-explanatory options like `--resize`, `--desaturate` and so on.
 
 - **Star rating filter:** Many photo managers like Lightroom or Bridge let their users reject bad images or rate better ones with ‘stars’. *linear-tiff* will get a new CLI option flag to set a minimum rating level. 
 
