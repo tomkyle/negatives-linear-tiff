@@ -77,7 +77,7 @@ readonly CREDITS_FILE="CREDITS"
 
 
 # --------------------------------------
-# Global functions
+# Output and formatting functions
 # --------------------------------------
 
 
