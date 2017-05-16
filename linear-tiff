@@ -255,7 +255,10 @@ declare DEFAULT_SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 # Verbous mode
 # Disbaled per default; enabe with -v flag
 declare -i verbous_mode=0;
-
+declare -i desaturate_colors=0
+declare -i resize_width=0
+declare flipflop_positive=""
+declare output_directory="${PWD}"
 
 # ======================================
 #  runBatchMode
@@ -314,7 +317,7 @@ function runBatchMode {
 # ======================================
 #  convertRawPhotos
 #
-#  Usage: convertRawPhotos [-d] [-v] [-f direction] [-o path] [-r pixel] rawfile [rawfiles ...]
+#  Usage: convertRawPhotos rawfile [rawfiles ...]
 # ======================================
 
 function convertRawPhotos {
@@ -336,6 +339,12 @@ function convertRawPhotos {
     require basename
     require getopts
 
+
+    # --------------------------------------
+    # Files to work on.
+    # --------------------------------------
+
+    local readonly INPUT_FILES="$@"
 
 
     # --------------------------------------
@@ -404,43 +413,6 @@ function convertRawPhotos {
     # --------------------------------------
     local ICC_PROFILE_PATH
     ICC_PROFILE_PATH=$(color-profiles srgb-linear )
-
-
-    # --------------------------------------
-    # Default parameter values.
-    # May be overriden by user.
-    # --------------------------------------
-
-
-    local flipflop_positive=""
-    local output_directory="${PWD}"
-    declare -i desaturate_colors=0
-    declare -i resize_width=0
-    declare -i verbous_mode=0
-
-
-    # --------------------------------------
-    # Parse parameters
-    # --------------------------------------
-
-    while getopts $OPTIONS_LIST option
-    do
-        case "${option}"
-        in
-            d)  desaturate_colors=1;;
-            f)  flipflop_positive="${OPTARG}";;
-            o)  output_directory=${OPTARG};;
-            r)  resize_width=${OPTARG};;
-            v)  verbous_mode=1;;
-            *)  e_error "Unknown option used. Run '${SCRIPT_NAME} -h' parameters to get a list of all options.";;
-        esac
-    done
-
-    # $OPTIND is the number of options found by getopts;
-    # shifting removes all parameters pardes.
-    # Any left parameters are now in $@ and are considered files to process.
-    shift "$((OPTIND-1))"
-    local readonly INPUT_FILES="$@"
 
 
     # ---------------------------------------
@@ -728,6 +700,7 @@ function main {
                 use_batch_mode=1
                 ;;
             -d|--desaturate)
+                desaturate_colors=1
                 remaining_arguments+=" ${__option}"
                 ;;
             -v|--verbous)
@@ -736,16 +709,19 @@ function main {
                 ;;
             -f|--flipflop)
                 _require_argument "${__option}" "${__maybe_param}"
+                flipflop_positive="${__maybe_param}"
                 remaining_arguments+="${__option} ${__maybe_param}"
                 shift
                 ;;
             -o|--output)
                 _require_argument "${__option}" "${__maybe_param}"
+                output_directory="${__maybe_param}"
                 remaining_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
             -r|--resize)
                 _require_argument "${__option}" "${__maybe_param}"
+                resize_width=${__maybe_param}
                 remaining_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
@@ -781,7 +757,7 @@ function main {
     if [ $use_batch_mode -gt 0 ]; then
         runBatchMode ${remaining_arguments}
     else
-        convertRawPhotos ${remaining_arguments} ${image_parameters}
+        convertRawPhotos ${image_parameters}
     fi;
 
 }
