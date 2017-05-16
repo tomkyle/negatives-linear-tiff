@@ -417,7 +417,6 @@ function convertRawPhotos {
     local output_directory="${PWD}"
 
     declare -i resize_width=0
-    declare -i verbous_mode=0
 
 
     # --------------------------------------
@@ -428,11 +427,11 @@ function convertRawPhotos {
     do
         case "${option}"
         in
-            #d)  desaturate_colors=1;;
-            f)  flipflop_positive="${OPTARG}";;
+            d)  ;;
+            f)  ;;
             o)  output_directory=${OPTARG};;
             r)  resize_width=${OPTARG};;
-            v)  verbous_mode=1;;
+            v)  ;;
             *)  e_error "Unknown option used. Run '${SCRIPT_NAME} -h' parameters to get a list of all options.";;
         esac
     done
