@@ -25,10 +25,11 @@ OPTIONS:
 -f direction  Mirror the image vertically or horizontally.
               Possible values are:
 
-              flip - mirror upside-down
-              flop - mirror in the horizontal direction
-                     This is the way to go when your negatives
-                     have been digitalized on their emulsion (back) side.
+              flip     - mirror upside-down
+              flop     - mirror in the horizontal direction
+                         This is the way to go when your negatives
+                         have been digitalized on their emulsion (back) side.
+              flipflop - ... guess!
 
 -o path       Output directory. Defaults to current working dir.
 
