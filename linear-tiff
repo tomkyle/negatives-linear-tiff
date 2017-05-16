@@ -545,7 +545,7 @@ function convertRawPhotos {
         # Show some image info
         # ---------------------------------------
 
-        e_info "$(dcraw -i "${RAW_PHOTO}")"
+        dcraw -i "${RAW_PHOTO}"
         e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
 
 
