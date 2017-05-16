@@ -267,26 +267,18 @@ declare output_directory="${PWD}"
 function runBatchMode {
 
     # Stores all function parameters for use with GNU Parallel
-    local readonly FUNC_ARGUMENTS
-    FUNC_ARGUMENTS="$@"
+    local -r FUNC_ARGUMENTS=("${@}")
 
     # For statistic purposes
-    local readonly START_TIME
-    START_TIME=$SECONDS
-    local readonly CPUs
-    CPUs=$(getconf _NPROCESSORS_ONLN)
-
-    # For working on files
-    local readonly TODO_TXT
-    TODO_TXT=$(createTodoFile)
-    local readonly number_of_images
-
+    local START_TIME=$SECONDS
+    local -r CPUs=$(getconf _NPROCESSORS_ONLN)
 
     # ---------------------------------------
     # Find stuff to work on
     # ---------------------------------------
+    local -r TODO_TXT=$(createTodoFile)
     findFiles > "${TODO_TXT}"
-    number_of_images=$(countLinesInFile "${TODO_TXT}")
+    local -r number_of_images=$(countLinesInFile "${TODO_TXT}")
 
 
     # ---------------------------------------
@@ -294,7 +286,7 @@ function runBatchMode {
     # ---------------------------------------
     printf "Process these %s images, using GNU Parallel:\n" "${number_of_images}"
     e_verbous "$(cat "${TODO_TXT}")"
-    cat "${TODO_TXT}" | parallel "$0" "${FUNC_ARGUMENTS}" {}
+    cat "${TODO_TXT}" | parallel "$0" "${FUNC_ARGUMENTS[@]}" {}
 
 
     # ---------------------------------------
@@ -302,13 +294,13 @@ function runBatchMode {
     # ---------------------------------------
 
     # Some stats
-    local readonly ELAPSED_TIME=$(($SECONDS - $START_TIME))
+    local -r ELAPSED_TIME=$((SECONDS - START_TIME))
 
     echo $DIVIDER_LINE
     echo "Some stats:"
-    printf "CPUs used:     %s\n"          ${CPUs}
-    printf "Elapsed time:  %smin %ssec\n" $(($ELAPSED_TIME/60)) $(($ELAPSED_TIME%60))
-    printf "Done:          %s images\n"   ${number_of_images}
+    printf "CPUs used:     %s\n"          "${CPUs}"
+    printf "Elapsed time:  %smin %ssec\n" $((ELAPSED_TIME/60)) $((ELAPSED_TIME%60))
+    printf "Done:          %s images\n"   "${number_of_images}"
 
 
 }
@@ -344,7 +336,7 @@ function convertRawPhotos {
     # Files to work on.
     # --------------------------------------
 
-    local readonly INPUT_FILES="$@"
+    local -r INPUT_FILES=("${@}")
 
 
     # --------------------------------------
@@ -504,7 +496,7 @@ function convertRawPhotos {
     #  The Loop: Process each file given
     # =============================================================
 
-    for RAW_PHOTO in $INPUT_FILES
+    for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
         echo $DIVIDER_LINE
 
