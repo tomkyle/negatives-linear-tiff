@@ -269,8 +269,8 @@ function runBatchMode {
     number_of_images=$(countLinesInFile "${TODO_TXT}")
 
     if [ $verbous_mode -gt 0 ]; then
-        e_info "Files to process:"
-        cat "${TODO_TXT}"
+        echo "Files to process:"
+        e_verbous "$(cat "${TODO_TXT}")"
         echo;
     fi
 
