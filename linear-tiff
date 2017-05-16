@@ -66,6 +66,7 @@ readonly C_WHITE='\033[1;37m'
 readonly C_RED='\033[0;31m'
 readonly C_GREEN='\033[0;32m'
 readonly C_BLUE='\033[1;34m'
+readonly C_GRAY='\033[1;30m'
 readonly C_ORANGE=$(tput setaf 3)
 readonly NC='\033[0m' # No Color
 
@@ -97,6 +98,13 @@ function e_warning {
 function e_success () {
   echo -e "${C_GREEN}✔ ${*}${NC}"
 }
+
+function e_verbous () {
+  if [ $verbous_mode -gt 0 ]; then
+    echo -e "${C_GRAY}${*}${NC}"
+  fi
+}
+
 
 
 # --------------------------------------
@@ -456,10 +464,10 @@ function convertRawPhotos {
     # TIFF output
     dcraw_options+=" -T"
 
-  ### This is tooo noisy....
+    ### This is tooo noisy....
     # if [ "${verbous_mode}" -gt 0 ]; then
     #   dcraw_options="-v ${dcraw_options}"
-    # fi
+    #fi
 
 
 
@@ -538,10 +546,7 @@ function convertRawPhotos {
         # ---------------------------------------
 
         e_info "$(dcraw -i "${RAW_PHOTO}")"
-        if [ "${verbous_mode}" -eq 1 ]; then
-            dcraw -i -v "${RAW_PHOTO}"
-            echo;
-        fi
+        e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
 
 
 
@@ -549,13 +554,8 @@ function convertRawPhotos {
         # Call dcraw
         # ---------------------------------------
         printf "Create linear TIFF with dcraw: "
-        if [ $verbous_mode -gt 0 ]; then
-            printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}"
-        fi;
+        e_verbous "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
         dcraw $dcraw_options "${RAW_PHOTO}" && e_success
-        if [ $verbous_mode -gt 0 ]; then
-            echo;
-        fi
 
 
 
@@ -572,9 +572,7 @@ function convertRawPhotos {
         #  Handle output file
         # ---------------------------------------
         printf "Mangle output file through mogrify: "
-        if [ $verbous_mode -gt 0 ]; then
-            printf "\nmogrify %s " "${mogrify_options}"
-        fi;
+        e_verbous "$(printf "\nmogrify %s " "${mogrify_options}")"
         mogrify ${mogrify_options} "${output_tiff}" && e_success ""
         if [ $verbous_mode -gt 0 ]; then
             echo;
