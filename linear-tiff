@@ -83,7 +83,8 @@ readonly CREDITS_FILE="CREDITS"
 
 # Error message and error exit, redirecting stdout to stderr
 function e_error {
-    echo -e >&2 "${C_RED}✖ ${*}${NC}"; exit 1;
+    echo -e >&2 "${C_RED}✖ ${*}${NC}";
+    exit 1;
 }
 
 function e_info {
@@ -113,10 +114,10 @@ function e_verbous () {
 # Create Todo file
 # --------------------------------------
 function createTodoFile {
-        mkdir -p "${WORK_TMPDIR}"
-        TODO_TXT="${WORK_TMPDIR}/rawfiles-todo.txt"
-        touch "${TODO_TXT}"
-        echo "${TODO_TXT}"
+  mkdir -p "${WORK_TMPDIR}"
+  TODO_TXT="${WORK_TMPDIR}/rawfiles-todo.txt"
+  touch "${TODO_TXT}"
+  echo "${TODO_TXT}"
 }
 
 
@@ -162,16 +163,15 @@ function catFirstFound {
 
 
 # --------------------------------------
-# populateTodoFile
+# findFiles
 #
 # Usage:
-#   populateTodoFile <file> [find iregex] [search dir]
+#   findFiles [find iregex] [search dir]
 # --------------------------------------
-function populateTodoFile {
-    local todofile=${1}
-    local regex=${2:-${DEFAULT_SEARCH_FILES_IREGEX}}
-    local directory=${3:-${DEFAULT_SEARCH_DIRECTORY:-.}}
-    find -E "${directory}" -maxdepth 1 -type f -iregex "${regex}" > "${todofile}"
+function findFiles {
+    local regex=${1:-${DEFAULT_SEARCH_FILES_IREGEX}}
+    local directory=${2:-${DEFAULT_SEARCH_DIRECTORY:-.}}
+    find -E "${directory}" -maxdepth 1 -type f -iregex "${regex}"
 }
 
 
@@ -282,7 +282,7 @@ function runBatchMode {
     # ---------------------------------------
     # Find stuff to work on
     # ---------------------------------------
-    populateTodoFile "${TODO_TXT}"
+    findFiles > "${TODO_TXT}"
     number_of_images=$(countLinesInFile "${TODO_TXT}")
 
 
@@ -292,7 +292,6 @@ function runBatchMode {
     printf "Process these %s images, using GNU Parallel:\n" "${number_of_images}"
     e_verbous "$(cat "${TODO_TXT}")"
     cat "${TODO_TXT}" | parallel "$0" "${FUNC_ARGUMENTS}" {}
-    echo;
 
 
     # ---------------------------------------
@@ -557,7 +556,7 @@ function convertRawPhotos {
         # Show some image info
         # ---------------------------------------
 
-        dcraw -i "${RAW_PHOTO}"
+        e_info "$(dcraw -i "${RAW_PHOTO}")"
         e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
 
 
