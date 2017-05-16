@@ -268,18 +268,14 @@ function runBatchMode {
     local readonly number_of_images
     number_of_images=$(countLinesInFile "${TODO_TXT}")
 
-    if [ $verbous_mode -gt 0 ]; then
-        echo "Files to process:"
-        e_verbous "$(cat "${TODO_TXT}")"
-        echo;
-    fi
 
     # ---------------------------------------
     # Start parallel processing
     # ---------------------------------------
-    e_info "$(printf "Process %s images, using GNU Parallel:" "${number_of_images}")"
+    printf "Process these %s images, using GNU Parallel:\n" "${number_of_images}"
+    e_verbous "$(cat "${TODO_TXT}")"
     cat "${TODO_TXT}" | parallel "$0" "${FUNC_ARGUMENTS}" {}
-
+    echo;
 
     # ---------------------------------------
     # Outro
