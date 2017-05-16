@@ -1,6 +1,11 @@
 # negatives/linear-tiff
 
-**Converts RAW/NEF/CR2 files into linear TIFF files.**
+**Converts RAW/NEF/CR2 files into linear TIFF files. Features:**
+
+- **Mirroring:** Useful for negatives digitalized on their emulsion side. 
+- **Resizing:** When megapixel power is not needed
+- **Grayscaling:** B/W lovers save up to 60% disk space. 
+- **ICC profiles:** Output images get a linear gamma profile. No ‘custom gamma’ needed in Photoshop!
 
 These utilities are used:
 
@@ -51,6 +56,29 @@ Option | Value | Description
 -r     | pixel | Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
 -v     |       | Verbous mode — show some more information under way.
 
+
+
+
+## Upcoming Features
+
+These features go into the current major version 1:
+
+-  **Long option names:** Those preferring speaking option names like `--resize` or `--all` will enjoy the long option names I currently am working on. 
+
+- **Filter by star rating:** Many photo managers like Lightroom or Bridge let their users rate images with ‘stars’ or reject them. *linear-tiff* will get a new CLI option flag to set a minimum rating level. 
+
+- **Custom configuration files:** What if users could store their favourite options in a configuration file? `~/.negativesrc` or ` ~/linear-tiff.conf` or even an *INI, YAML* or *JSON?*
+
+
+
+## Roadmap to Version 2
+
+
+- **The *-r* option will be renamed to *-w*,** as *-r* is more natural for the upcoming *Rating filter*, and so is *-w* for *width*.
+- **The *-f* option will be renamed to *-m*,** as the image action actually performed is *mirroring horizontally or vertically*. The option values *flip* and *flop* will then become something like *V*, *H* or *VH*.
+
+
+
                               
 ## Problems and FAQ
 
@@ -76,4 +104,3 @@ Not neccessarily your fault. While *dcraw* itself can defacto handle every exist
 $ brew remove imagemagick
 $ brew install little-cms2 imagemagick --with-little-cms2
 ```
-
