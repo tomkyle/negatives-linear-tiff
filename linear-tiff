@@ -268,7 +268,7 @@ function runBatchMode {
     local readonly number_of_images
     number_of_images=$(countLinesInFile "${TODO_TXT}")
 
-    if [ $verbous_mode -eq 1 ]; then
+    if [ $verbous_mode -gt 0 ]; then
         e_info "Files to process:"
         cat "${TODO_TXT}"
         echo;
