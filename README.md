@@ -44,15 +44,28 @@ $ linear-tiff [options] [-a | file(s)]
 
 ## Options
 
-Option | Value | Description
-:------|:------|:------------
-`-a, --all`     |       | All images — process any RAW/NEF/CR2 file in working directory, using GNU Parallel.
-`-d, --desaturate`     |       | Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
-`-f, --flipflop`     | value | Mirror the image vertically and/or horizontally. Possible values are `flop` horizontal, `flip` vertical or even `flipflop` (guess what). Example: `-f flop`
-`-h, --help`     |       | Display help text
-`-o, --output`     | path  | Output directory — default is current working directory. Example: `-o results`
-`-r, --resize`     | pixel | Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
-`-v, --verbous`     |       | Verbous mode — show some more information under way.
+####-a, --all
+All images — process any RAW/NEF/CR2 file in working directory, using GNU Parallel.
+
+
+####-d, --desaturate
+Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
+
+####-f, --flipflop *value*  
+Mirror the image vertically and/or horizontally. Possible values are `flop` horizontal, `flip` vertical or even `flipflop` (guess what). Example: `-f flop`
+
+####-h, --help
+Display help text
+
+####-o, --output *path*  
+Output directory — default is current working directory. Example: `-o results`
+
+####-r, --resize *pixel*
+Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
+
+####-v, --verbous
+Verbous mode — show some more information under way.
+
 
 
 ## Examples
