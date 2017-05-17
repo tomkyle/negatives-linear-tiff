@@ -580,15 +580,13 @@ function convertRawPhotos {
             mv "${output_tiff}" "${output_directory}/"
             e_result "$(printf "Result: %s/%s" "${output_directory}" "${output_tiff}")"
         else
-            e_result "$(printf "Result: %s$" "${output_tiff}")"
+            e_result "$(printf "Result: %s" "${output_tiff}")"
         fi
 
 
         # screen readability
         echo;
     done
-
-
 
     exit 0
 }
