@@ -24,7 +24,7 @@ OPTIONS:
               Grayscaling saves up to 60% in file size.
               If omitted, the TIFF files remain color-profiled (sRGB).
 
--f direction, --flipflop direction
+-f, --flipflop direction
               Mirror the image vertically or horizontally.
               Possible values are:
 
@@ -36,10 +36,10 @@ OPTIONS:
 
 -h, --help    Display this help text
 
--o path, --output path
+-o, --output path
               Output directory. Defaults to current working dir.
 
--r pixel, --resize pixel
+-r, --resize pixel
               Resize larger side to this pixel length, preserving aspect ratio.
 
 -v, --verbous Turn on dcraw's verbous mode.
