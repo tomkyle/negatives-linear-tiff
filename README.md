@@ -2,8 +2,6 @@
 
 **Converts RAW/NEF/CR2 files into linear 16bit-TIFF files.**
 
-**Features:**
-
 - **Mirroring** for negatives digitalized on their emulsion side. 
 - **Resizing**  when megapixel power is not everything.
 - **Grayscaling:** B/W lovers save up to 60% disk space. 
@@ -13,7 +11,7 @@
 **What happens inside?** [dcraw](cybercom.net/~dcoffin/dcraw/dcraw.1.html) is used to create linear 16bit TIFF files. [ImageMagick](https://www.imagemagick.org/script/index.php) then does the color-profiling, B/W grayscaling, mirroring, resizing, and ZIP compression. [GNU Parallel](https://www.gnu.org/software/parallel/) uses all CPU cores to speed up the whole thing.
 
 
-## Homebrew Installation (Mac OS)
+## Homebrew Installation (MacOS)
 
 
 The *linear-tiff* bash script can be installed by a [Homebrew](https://brew.sh/) formula, which itself is part of the [tomkyle/homebrew-negatives](https://github.com/tomkyle/homebrew-negatives) tap. 
@@ -34,7 +32,7 @@ $ brew install tomkyle/negatives/linear-tiff
 
 # Usage
 
-Run `linear-tiff --help` or `-h` to display help text. See [options](#options) and [examples](#examples).
+Open your terminal application and go to your images directory. *linear-tiff* will work in the current working directory. Run `linear-tiff --help` or `-h` to display help text. See [Options](#options) and [Examples](#examples).
 
 ```bash
 $ linear-tiff [options] [-a | file(s)]
@@ -127,9 +125,9 @@ $ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstac
 
 These features go into the current major version 1:
 
-- **Star rating filter:** Many photo managers like Lightroom or Bridge let their users reject bad images or rate better ones with ‘stars’. *linear-tiff* will get a new CLI option flag to set a minimum rating level. 
+- **Star rating filter:** Many photo managers like Lightroom or Bridge let their users reject bad images or rate better ones with ‘stars’. *linear-tiff* should get a new CLI option flag to set a minimum rating level. Discuss in [issue #6.](https://github.com/tomkyle/negatives-linear-tiff/issues/6)
 
-- **Custom configuration files:** Would it not be fine if users could store their favourite options in a configuration file? `~/.negativesrc` or ` ~/linear-tiff.conf` or even an *INI, YAML* or *JSON?*
+- **Custom configuration files:** Would it not be fine if users could store their favourite options in a configuration file? `~/.negativesrc` or ` ~/linear-tiff.conf` or even an *INI, YAML* or *JSON?* Head over to [issue #7.](https://github.com/tomkyle/negatives-linear-tiff/issues/7)
 
 
 
