@@ -125,9 +125,9 @@ $ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstac
 
 These features go into the current major version 1:
 
-- **Star rating filter:** Many photo managers like Lightroom or Bridge let their users reject bad images or rate better ones with ‘stars’. *linear-tiff* will get a new CLI option flag to set a minimum rating level. 
+- **Star rating filter:** Many photo managers like Lightroom or Bridge let their users reject bad images or rate better ones with ‘stars’. *linear-tiff* should get a new CLI option flag to set a minimum rating level. Discuss in [issue #6.](https://github.com/tomkyle/negatives-linear-tiff/issues/6)
 
-- **Custom configuration files:** Would it not be fine if users could store their favourite options in a configuration file? `~/.negativesrc` or ` ~/linear-tiff.conf` or even an *INI, YAML* or *JSON?*
+- **Custom configuration files:** Would it not be fine if users could store their favourite options in a configuration file? `~/.negativesrc` or ` ~/linear-tiff.conf` or even an *INI, YAML* or *JSON?* Head over to [issue #7.](https://github.com/tomkyle/negatives-linear-tiff/issues/7)
 
 
 
