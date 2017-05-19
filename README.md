@@ -11,7 +11,7 @@
 **What happens inside?** [dcraw](cybercom.net/~dcoffin/dcraw/dcraw.1.html) is used to create linear 16bit TIFF files. [ImageMagick](https://www.imagemagick.org/script/index.php) then does the color-profiling, B/W grayscaling, mirroring, resizing, and ZIP compression. [GNU Parallel](https://www.gnu.org/software/parallel/) uses all CPU cores to speed up the whole thing.
 
 
-## Homebrew Installation (Mac OS)
+## Homebrew Installation (MacOS)
 
 
 The *linear-tiff* bash script can be installed by a [Homebrew](https://brew.sh/) formula, which itself is part of the [tomkyle/homebrew-negatives](https://github.com/tomkyle/homebrew-negatives) tap. 
@@ -32,7 +32,7 @@ $ brew install tomkyle/negatives/linear-tiff
 
 # Usage
 
-Run `linear-tiff --help` or `-h` to display help text. See [options](#options) and [examples](#examples).
+Open your terminal application and go to your images directory. *linear-tiff* will work in the current working directory. Run `linear-tiff --help` or `-h` to display help text. See [Options](#options) and [Examples](#examples).
 
 ```bash
 $ linear-tiff [options] [-a | file(s)]
