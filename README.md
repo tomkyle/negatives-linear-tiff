@@ -17,16 +17,16 @@
 The *linear-tiff* bash script can be installed by a [Homebrew](https://brew.sh/) formula, which itself is part of the [tomkyle/homebrew-negatives](https://github.com/tomkyle/homebrew-negatives) tap. 
 
 ```bash
-# Optional: Install tap
+# Variant 1:
+# Install tap first, formula second:
 $ brew tap tomkyle/negatives
-
-# Install formula
 $ brew install linear-tiff
 ```
 
 As “tapping” first is not neccessarily needed, you can install the formula directly:
 
 ```bash
+# Variant 2
 $ brew install tomkyle/negatives/linear-tiff
 ```
 
