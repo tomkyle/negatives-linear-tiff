@@ -154,7 +154,7 @@ function e_info {
 }
 
 function e_warning {
-  echo -e "${C_ORANGE}➜ ${*}${NC}"
+  echo -e "${C_ORANGE}Warning: ${*}${NC}"
 }
 
 function e_success () {
