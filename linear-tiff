@@ -381,13 +381,8 @@ function convertRawPhotos {
     require brew
     require dirname
     require basename
-    require getopts
 
-
-    # --------------------------------------
     # Files to work on.
-    # --------------------------------------
-
     local -r INPUT_FILES=("${@}")
 
 
