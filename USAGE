@@ -13,9 +13,11 @@ USAGE:        Batch mode: Process all RAW files in current directory:
               $ linear-tiff [OPTIONS] FILE [other FILE(s)]
 
 OPTIONS:
--a, --all     Turn on  batch mode: All RAW files will be processed.
+-a, --all     Turn on batch mode: All RAW files will be processed.
               GNU parallel is used to process as many images at the same time
               as CPU cores are available.
+
+--debug       Turn on debugging mode, showing whats going on.
 
 -d, --desaturate
               Desaturate colors, which is recommended for B/W negatives.
