@@ -117,6 +117,10 @@ readonly SAFER_IFS=$'\n\t'
 #IFS="${SAFER_IFS}"
 
 
+# --------------------------------------
+# Filesystem basics
+# --------------------------------------
+
 # Filesystem basics
 readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly SCRIPT_NAME=$(basename "${0}")
