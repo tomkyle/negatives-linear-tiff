@@ -532,9 +532,7 @@ function convertRawPhotos {
     # ---------------------------------------
     # Create output directory if needed.
     # ---------------------------------------
-    if [ "${output_directory}" != "${PWD}" ]; then
-        mkdir -p "${output_directory}";
-    fi
+    [ ! -z "${output_directory}" ] && mkdir -p "${output_directory[*]}"
 
 
     # =============================================================
