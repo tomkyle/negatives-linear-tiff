@@ -294,6 +294,16 @@ _require_argument() {
 
 function runBatchMode {
 
+    # ---------------------------------------
+    # Requirements
+    # ---------------------------------------
+
+    # Homebrew requirements
+    require parallel
+
+    # System commands
+    require getconf
+
     # Stores all function parameters for use with GNU Parallel
     local -r FUNC_ARGUMENTS=("${@}")
 
