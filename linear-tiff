@@ -577,7 +577,7 @@ function convertRawPhotos {
         # Call dcraw
         # ---------------------------------------
         printf "Linear TIFF "
-        e_verbous "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
+        e_debug "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
         (dcraw $dcraw_options "${RAW_PHOTO}") || {
             e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
             continue
@@ -597,13 +597,13 @@ function convertRawPhotos {
         # ---------------------------------------
         #  Handle output file
         # ---------------------------------------
-        printf "Mangle output file through mogrify: "
-        e_verbous "$(printf "\nmogrify %s " "${mogrify_options}")"
-        mogrify ${mogrify_options} "${output_tiff}" && e_success ""
-        if [ $verbous_mode -gt 0 ]; then
-            echo;
-        fi
-
+        printf "Mangle output file "
+        e_debug "$(printf "\nmogrify %s " "${mogrify_options}")"
+        (mogrify ${mogrify_options} "${output_tiff}") || {
+            e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
+            continue
+        }
+        e_success ""
 
 
         # ---------------------------------------
