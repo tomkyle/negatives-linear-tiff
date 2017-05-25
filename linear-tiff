@@ -623,12 +623,7 @@ function convertRawPhotos {
         # ---------------------------------------
         printf "Result %s" "$(e_result "${result_file}")"
 
-
-        # screen readability
-        echo;
     done
-
-    exit 0
 }
 
 
