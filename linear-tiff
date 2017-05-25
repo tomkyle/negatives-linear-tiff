@@ -114,7 +114,7 @@ readonly OPTIONS_LIST="ahdvf:o:r:"
 ### this breaks calling dcraw and mogrify. Better let this commented-out.
 readonly DEFAULT_IFS="${IFS}"
 readonly SAFER_IFS=$'\n\t'
-#IFS="${SAFER_IFS}"
+IFS="${SAFER_IFS}"
 
 
 # --------------------------------------
@@ -542,8 +542,6 @@ function convertRawPhotos {
     for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
 
-        e_info "$(printf "\n%s\n" "${RAW_PHOTO}")"
-
         # ---------------------------------------
         # Just in case $RAW_PHOTO is NOT a regular file
         # ---------------------------------------
@@ -551,6 +549,12 @@ function convertRawPhotos {
             e_warning "$(printf '%s is not a regular file. Ignoring.' "${RAW_PHOTO}")"
             continue;
         fi
+
+        # ---------------------------------------
+        # Show some image info
+        # ---------------------------------------
+        e_info "$(dcraw -i "${RAW_PHOTO}")"
+        e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
 
 
         # ---------------------------------------
@@ -564,12 +568,6 @@ function convertRawPhotos {
         local output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
 
 
-        # ---------------------------------------
-        # Show some image info
-        # ---------------------------------------
-
-        e_info "$(dcraw -i "${RAW_PHOTO}")"
-        e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
 
 
 
@@ -578,10 +576,13 @@ function convertRawPhotos {
         # ---------------------------------------
         printf "Linear TIFF "
         e_debug "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
-        (dcraw $dcraw_options "${RAW_PHOTO}") || {
-            e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
-            continue
-        }
+        IFS="${SAFER_IFS}"
+        dcraw $dcraw_options "${RAW_PHOTO}"
+        IFS="${SAFER_IFS}"
+        echo $?
+
+        #    e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
+        #    continue
         e_success ""
 
 
@@ -599,10 +600,13 @@ function convertRawPhotos {
         # ---------------------------------------
         printf "Mangle output file "
         e_debug "$(printf "\nmogrify %s " "${mogrify_options}")"
+
+        IFS="${SAFER_IFS}"
         (mogrify ${mogrify_options} "${output_tiff}") || {
             e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
             continue
         }
+        IFS="${DEFAULT_IFS}"
         e_success ""
 
         # Prepare result output
