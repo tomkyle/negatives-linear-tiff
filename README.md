@@ -45,6 +45,8 @@ $ linear-tiff [options] [-a | file(s)]
 #### -a, --all
 All images — process any RAW/NEF/CR2 file in working directory, using GNU Parallel.
 
+#### --debug
+Switch on debugging mode, showing everything that's going on.
 
 #### -d, --desaturate
 Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
