@@ -580,9 +580,9 @@ function convertRawPhotos {
         e_verbous "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
         (dcraw $dcraw_options "${RAW_PHOTO}") || {
             e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
+            continue
         }
         e_success ""
-
 
 
         # ---------------------------------------
