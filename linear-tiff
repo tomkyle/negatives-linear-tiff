@@ -373,7 +373,6 @@ function convertRawPhotos {
 
     # Homebrew dependencies
     require dcraw
-    require parallel
     require mogrify
     require color-profiles
 
