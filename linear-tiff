@@ -576,7 +576,7 @@ function convertRawPhotos {
         # ---------------------------------------
         # Call dcraw
         # ---------------------------------------
-        printf "Create linear TIFF with dcraw: "
+        printf "Linear TIFF "
         e_verbous "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
         dcraw $dcraw_options "${RAW_PHOTO}" && e_success
 
@@ -606,7 +606,7 @@ function convertRawPhotos {
         # ---------------------------------------
         # Move output file to directory, if required
         # ---------------------------------------
-        if [ "${output_directory}" != "${PWD}" ]; then
+        if [ ! -z "${output_directory}" ]; then
             mv "${output_tiff}" "${output_directory}/"
             e_result "$(printf "Result: %s/%s" "${output_directory}" "${output_tiff}")"
         else
