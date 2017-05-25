@@ -542,11 +542,13 @@ function convertRawPhotos {
     for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
 
+        e_info "$(printf "\n%s\n" "${RAW_PHOTO}")"
+
         # ---------------------------------------
         # Just in case $RAW_PHOTO is NOT a regular file
         # ---------------------------------------
         if [ ! -f "${RAW_PHOTO}" ]; then
-            e_warning "$(printf '%s is not a regular file.' "${RAW_PHOTO}")"
+            e_warning "$(printf '%s is not a regular file. Ignoring.' "${RAW_PHOTO}")"
             continue;
         fi
 
