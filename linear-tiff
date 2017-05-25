@@ -766,7 +766,7 @@ function main {
             -o|--output)
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
-                recursion_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments+=" ${__option} \"${__maybe_param}\""
                 shift
                 ;;
             -r|--resize)
