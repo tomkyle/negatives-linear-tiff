@@ -173,7 +173,7 @@ function e_warning {
 }
 
 function e_success () {
-  echo -e "${C_GREEN}✔ ${*}${NC}"
+  printf "${C_GREEN}✔ %s${NC}" "${*-}"
   [ $debug_mode -gt 0 ] && echo -e ""
 }
 
