@@ -576,8 +576,8 @@ function convertRawPhotos {
         # ---------------------------------------
         printf "Linear TIFF "
         e_debug "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
-        IFS="${SAFER_IFS}"
-        dcraw $dcraw_options "${RAW_PHOTO}"
+        IFS="${DEFAULT_IFS}"
+        dcraw ${dcraw_options} "${RAW_PHOTO}"
         IFS="${SAFER_IFS}"
         echo $?
 
@@ -601,12 +601,12 @@ function convertRawPhotos {
         printf "Mangle output file "
         e_debug "$(printf "\nmogrify %s " "${mogrify_options}")"
 
-        IFS="${SAFER_IFS}"
+        IFS="${DEFAULT_IFS}"
         (mogrify ${mogrify_options} "${output_tiff}") || {
             e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
             continue
         }
-        IFS="${DEFAULT_IFS}"
+        IFS="${SAFER_IFS}"
         e_success ""
 
         # Prepare result output
@@ -725,6 +725,8 @@ function main {
     # Keeps anything that does not look like an option.
     local image_parameters=""
 
+    # Keeps anything that does not look like an option.
+    local -a image_parameters_array
 
     # getopts and getopts have inconsistent behavior, so using a simple home-brewed
     # while loop. This isn't perfectly compliant with POSIX, but it's close enough
@@ -791,7 +793,7 @@ function main {
                 # "Anything else must be an image parameter"
                 # This is a WORKAROUND, as without this "*)" block any given image parameters
                 # after the arguments seem to get lost (i.e., stuck in last $__option checked).
-                image_parameters+=" ${__option}"
+                image_parameters_array+=(${__option})
                 ;;
         esac
         shift
@@ -811,7 +813,7 @@ function main {
     if [ $use_batch_mode -gt 0 ]; then
         runBatchMode ${recursion_arguments}
     else
-        convertRawPhotos ${image_parameters}
+        convertRawPhotos ${image_parameters_array[@]}
     fi;
 
 }
