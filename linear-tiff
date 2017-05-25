@@ -605,16 +605,23 @@ function convertRawPhotos {
         }
         e_success ""
 
+        # Prepare result output
+        local result_file="${output_tiff}"
+
 
         # ---------------------------------------
         # Move output file to directory, if required
         # ---------------------------------------
         if [ ! -z "${output_directory}" ]; then
             mv "${output_tiff}" "${output_directory}/"
-            e_result "$(printf "Result: %s/%s" "${output_directory}" "${output_tiff}")"
-        else
-            e_result "$(printf "Result: %s" "${output_tiff}")"
+            result_file="${output_directory}/${output_tiff}"
         fi
+
+
+        # ---------------------------------------
+        # Print result
+        # ---------------------------------------
+        printf "Result %s" "$(e_result "${result_file}")"
 
 
         # screen readability
