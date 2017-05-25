@@ -52,6 +52,11 @@ declare -i desaturate_colors=0
 # or set this value to any pixel width
 declare -i resize_width=0
 
+# Trigger extra-verbous debugging mode
+# Disabled per default (0)
+# Set to 1 to enable or use --debug option
+declare -i debug_mode=0
+
 # Mirror output image horizontally or vertically.
 # Disabled per default ("")
 # Use with "-f flip|flop|flipflop"
@@ -169,6 +174,9 @@ function e_verbous () {
   [ $verbous_mode -gt 0 ] && printf "${C_GRAY}%s${NC}" "${*}"
 }
 
+function e_debug () {
+  [ $debug_mode -gt 0 ] && printf "${C_GRAY}%s${NC}" "${*}"
+}
 
 # --------------------------------------
 # Create Todo file
@@ -715,6 +723,10 @@ function main {
                 ;;
             -d|--desaturate)
                 desaturate_colors=1
+                recursion_arguments+=" ${__option}"
+                ;;
+            --debug)
+                debug_mode=1
                 recursion_arguments+=" ${__option}"
                 ;;
             -v|--verbous)
