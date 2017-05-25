@@ -166,9 +166,7 @@ function e_result () {
 }
 
 function e_verbous () {
-  if [ $verbous_mode -gt 0 ]; then
-    echo -e "${C_GRAY}${*}${NC}"
-  fi
+  [ $verbous_mode -gt 0 ] && printf "${C_GRAY}%s${NC}" "${*}"
 }
 
 
