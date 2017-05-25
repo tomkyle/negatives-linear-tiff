@@ -51,6 +51,7 @@ function trapCleanupTempDir() {
         printf "\nRemove temporary directory %s ... " "${tmp_dir_to_clean}"
         rm -Rf "${tmp_dir_to_clean}" && e_success
     fi
+    echo;
 }
 trap trapCleanupTempDir EXIT SIGINT
 
@@ -174,7 +175,9 @@ function e_warning {
 
 function e_success () {
   printf "${C_GREEN}✔ %s${NC}" "${*-}"
-  [ $debug_mode -gt 0 ] && echo -e ""
+  if [ $debug_mode -gt 0 ]; then
+    echo -e ""
+  fi
 }
 
 function e_result () {
@@ -182,11 +185,15 @@ function e_result () {
 }
 
 function e_verbous () {
-  [ $verbous_mode -gt 0 ] && printf "${C_GRAY}%s${NC}" "${*}"
+  if [ $verbous_mode -gt 0 ]; then
+    printf "${C_GRAY}%s${NC}" "${*}"
+  fi
 }
 
 function e_debug () {
-  [ $debug_mode -gt 0 ] && printf "${C_GRAY}%s${NC}" "${*}"
+  if [ $debug_mode -gt 0 ]; then
+    printf "${C_GRAY}%s${NC}" "${*}"
+  fi
 }
 
 # --------------------------------------
@@ -348,7 +355,7 @@ function runBatchMode {
     # Some stats
     local -r ELAPSED_TIME=$((SECONDS - START_TIME))
 
-    echo "Some stats:"
+    printf "Some stats:\n"
     printf "CPUs used:     %s\n"          "${CPUs}"
     printf "Elapsed time:  %smin %ssec\n" $((ELAPSED_TIME/60)) $((ELAPSED_TIME%60))
     printf "Done:          %s images\n"   "${number_of_images}"
@@ -554,8 +561,10 @@ function convertRawPhotos {
         # Show some image info
         # ---------------------------------------
         e_info "$(dcraw -i "${RAW_PHOTO}")"
-        e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
-
+        if [ $verbous_mode -gt 0 ]; then
+          e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
+          echo;
+        fi
 
         # ---------------------------------------
         # Filename magic
@@ -568,21 +577,18 @@ function convertRawPhotos {
         local output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
 
 
-
-
-
         # ---------------------------------------
         # Call dcraw
         # ---------------------------------------
         printf "Linear TIFF "
         e_debug "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
         IFS="${DEFAULT_IFS}"
-        dcraw ${dcraw_options} "${RAW_PHOTO}"
+        dcraw ${dcraw_options} "${RAW_PHOTO}" || {
+          e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
+          continue
+        }
         IFS="${SAFER_IFS}"
-        echo $?
 
-        #    e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
-        #    continue
         e_success ""
 
 
