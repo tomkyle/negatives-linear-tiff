@@ -161,7 +161,7 @@ readonly CREDITS_FILE="CREDITS"
 
 # Error message and error exit, redirecting stdout to stderr
 function e_error {
-    echo -e >&2 "${C_RED}✖ ${*}${NC}";
+    echo -e >&2 "${C_RED}Error: ${*}${NC}";
     exit 1;
 }
 
