@@ -33,6 +33,38 @@ set -o pipefail
 
 
 # --------------------------------------
+# Global Requirements
+# --------------------------------------
+function require  {
+    command -v "${1}" >/dev/null 2>&1 || e_error "$(printf "Program '%s' required, but it's not installed" "${1}")"
+}
+
+
+# --------------------------------------
+# Global settings
+# --------------------------------------
+
+# Default Exit or SIGINT(2) handler
+function trapCleanupTempDir() {
+    tmp_dir_to_clean="${WORK_TMPDIR:-}"
+    if [ -d "${tmp_dir_to_clean}" ]; then
+        printf "\nRemove temporary directory %s ... " "${tmp_dir_to_clean}"
+        rm -Rf "${tmp_dir_to_clean}" && e_success
+    fi
+    echo;
+}
+trap trapCleanupTempDir EXIT SIGINT
+
+
+# Where to search
+declare SEARCH_DIRECTORY='.'
+
+# What to search
+# The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
+declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+
+
+# --------------------------------------
 # User settings:
 # These settings can be set with command line arguments.
 # --------------------------------------
@@ -52,6 +84,11 @@ declare -i desaturate_colors=0
 # or set this value to any pixel width
 declare -i resize_width=0
 
+# Trigger extra-verbous debugging mode
+# Disabled per default (0)
+# Set to 1 to enable or use --debug option
+declare -i debug_mode=0
+
 # Mirror output image horizontally or vertically.
 # Disabled per default ("")
 # Use with "-f flip|flop|flipflop"
@@ -61,30 +98,6 @@ declare flipflop_positive=""
 # Where to store the output images.
 # Default ist current work directory.
 declare output_directory="${PWD}"
-
-
-# --------------------------------------
-# Global settings
-# --------------------------------------
-
-# Default Exit or SIGINT(2) handler
-function trapCleanupTempDir() {
-    tmp_dir_to_clean="${WORK_TMPDIR:-}"
-    if [ -d "${tmp_dir_to_clean}" ]; then
-        printf "\nRemove temporary directory %s ... " "${tmp_dir_to_clean}"
-        rm -Rf "${tmp_dir_to_clean}" && e_success
-    fi
-}
-trap trapCleanupTempDir EXIT SIGINT
-
-
-# Where to search
-declare SEARCH_DIRECTORY='.'
-
-# What to search
-# The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
-declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
-
 
 
 # --------------------------------------
@@ -102,8 +115,12 @@ readonly OPTIONS_LIST="ahdvf:o:r:"
 ### this breaks calling dcraw and mogrify. Better let this commented-out.
 readonly DEFAULT_IFS="${IFS}"
 readonly SAFER_IFS=$'\n\t'
-#IFS="${SAFER_IFS}"
+IFS="${SAFER_IFS}"
 
+
+# --------------------------------------
+# Filesystem basics
+# --------------------------------------
 
 # Filesystem basics
 readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -118,9 +135,11 @@ readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
 readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
 
 
+# --------------------------------------
+# Miscellaneous
+# --------------------------------------
 
 # Formatting stuff
-readonly DIVIDER_LINE="------------------------------------------"
 readonly C_WHITE='\033[1;37m'
 readonly C_RED='\033[0;31m'
 readonly C_GREEN='\033[0;32m'
@@ -142,7 +161,7 @@ readonly CREDITS_FILE="CREDITS"
 
 # Error message and error exit, redirecting stdout to stderr
 function e_error {
-    echo -e >&2 "${C_RED}✖ ${*}${NC}";
+    echo -e >&2 "${C_RED}Error: ${*}${NC}";
     exit 1;
 }
 
@@ -151,11 +170,14 @@ function e_info {
 }
 
 function e_warning {
-  echo -e "${C_ORANGE}➜ ${*}${NC}"
+  echo -e "${C_ORANGE}Warning: ${*}${NC}"
 }
 
 function e_success () {
-  echo -e "${C_GREEN}✔ ${*}${NC}"
+  printf "${C_GREEN}✔ %s${NC}" "${*-}"
+  if [ $debug_mode -gt 0 ]; then
+    echo -e ""
+  fi
 }
 
 function e_result () {
@@ -164,10 +186,15 @@ function e_result () {
 
 function e_verbous () {
   if [ $verbous_mode -gt 0 ]; then
-    echo -e "${C_GRAY}${*}${NC}"
+    printf "${C_GRAY}%s${NC}" "${*}"
   fi
 }
 
+function e_debug () {
+  if [ $debug_mode -gt 0 ]; then
+    printf "${C_GRAY}%s${NC}" "${*}"
+  fi
+}
 
 # --------------------------------------
 # Create Todo file
@@ -180,15 +207,6 @@ function createTodoFile {
 }
 
 
-# --------------------------------------
-# Check if given command is installed, exit otherwise
-#
-# Usage:
-#   require <command>
-# --------------------------------------
-function require  {
-    command -v "${1}" >/dev/null 2>&1 || e_error "$(printf "Program '%s' required, but it's not installed" "${1}")"
-}
 
 
 # --------------------------------------
@@ -212,11 +230,13 @@ function countLinesInFile {
 # --------------------------------------
 function catFirstFound {
     local file_to_cat="${1}"
-    if [ -f "${HOMEBREW_OPT_DIR}/${file_to_cat}" ]; then
-        cat "${HOMEBREW_OPT_DIR}/${file_to_cat}"
-    else
-        cat "${SCRIPT_DIR}/${file_to_cat}"
-    fi
+    local lookup=("${HOMEBREW_OPT_DIR}" "${SCRIPT_DIR}")
+
+    for dir in "${lookup[@]}"; do
+        if [ -f "${dir}/${file_to_cat}" ]; then
+            cat "${dir}/${file_to_cat}"
+        fi;
+    done
     echo;
 }
 
@@ -280,6 +300,16 @@ _require_argument() {
 
 function runBatchMode {
 
+    # ---------------------------------------
+    # Requirements
+    # ---------------------------------------
+
+    # Homebrew requirements
+    require parallel
+
+    # System commands
+    require getconf
+
     # Stores all function parameters for use with GNU Parallel
     local -r FUNC_ARGUMENTS=("${@}")
 
@@ -298,9 +328,24 @@ function runBatchMode {
     # ---------------------------------------
     # Start parallel processing
     # ---------------------------------------
-    printf "Process these %s images, using GNU Parallel:\n" "${number_of_images}"
-    e_verbous "$(column "${TODO_TXT}")"
-    parallel "$0" "${FUNC_ARGUMENTS[@]}" {} < "${TODO_TXT}"
+    if [ $verbous_mode -gt 0 ]; then
+        printf "Process these %s images:\n" "${number_of_images}"
+
+        # When few images to be processed, cat command should be plenty
+        [ $number_of_images -le 6 ] && cat_or_column="cat" || cat_or_column="column"
+
+        printf "${C_GRAY}%s\n${NC}" "$(${cat_or_column} "${TODO_TXT}")"
+        echo;
+    fi
+
+    if [ $debug_mode -gt 0 ]; then
+      echo "This is what GNU Parallel does:"
+      e_debug $(parallel --dry-run -a "${TODO_TXT}" "$0" "${FUNC_ARGUMENTS[@]}" "{}")
+      echo;
+      echo;
+    fi
+
+    parallel -a "${TODO_TXT}" "$0" "${FUNC_ARGUMENTS[@]}" "{}"
 
 
     # ---------------------------------------
@@ -310,8 +355,7 @@ function runBatchMode {
     # Some stats
     local -r ELAPSED_TIME=$((SECONDS - START_TIME))
 
-    echo $DIVIDER_LINE
-    echo "Some stats:"
+    printf "Some stats:\n"
     printf "CPUs used:     %s\n"          "${CPUs}"
     printf "Elapsed time:  %smin %ssec\n" $((ELAPSED_TIME/60)) $((ELAPSED_TIME%60))
     printf "Done:          %s images\n"   "${number_of_images}"
@@ -334,7 +378,6 @@ function convertRawPhotos {
 
     # Homebrew dependencies
     require dcraw
-    require parallel
     require mogrify
     require color-profiles
 
@@ -343,13 +386,8 @@ function convertRawPhotos {
     require brew
     require dirname
     require basename
-    require getopts
 
-
-    # --------------------------------------
     # Files to work on.
-    # --------------------------------------
-
     local -r INPUT_FILES=("${@}")
 
 
@@ -501,9 +539,7 @@ function convertRawPhotos {
     # ---------------------------------------
     # Create output directory if needed.
     # ---------------------------------------
-    if [ "${output_directory}" != "${PWD}" ]; then
-        mkdir -p "${output_directory}";
-    fi
+    [ ! -z "${output_directory}" ] && mkdir -p "${output_directory[*]}"
 
 
     # =============================================================
@@ -512,16 +548,23 @@ function convertRawPhotos {
 
     for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
-        echo $DIVIDER_LINE
 
         # ---------------------------------------
         # Just in case $RAW_PHOTO is NOT a regular file
         # ---------------------------------------
         if [ ! -f "${RAW_PHOTO}" ]; then
-            e_warning "$(printf '%s is not a regular file.' "${RAW_PHOTO}")"
+            e_warning "$(printf '%s is not a regular file. Ignoring.' "${RAW_PHOTO}")"
             continue;
         fi
 
+        # ---------------------------------------
+        # Show some image info
+        # ---------------------------------------
+        e_info "$(dcraw -i "${RAW_PHOTO}")"
+        if [ $verbous_mode -gt 0 ]; then
+          e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
+          echo;
+        fi
 
         # ---------------------------------------
         # Filename magic
@@ -535,21 +578,18 @@ function convertRawPhotos {
 
 
         # ---------------------------------------
-        # Show some image info
-        # ---------------------------------------
-
-        e_info "$(dcraw -i "${RAW_PHOTO}")"
-        e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
-
-
-
-        # ---------------------------------------
         # Call dcraw
         # ---------------------------------------
-        printf "Create linear TIFF with dcraw: "
-        e_verbous "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
-        dcraw $dcraw_options "${RAW_PHOTO}" && e_success
+        printf "Linear TIFF "
+        e_debug "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
+        IFS="${DEFAULT_IFS}"
+        dcraw ${dcraw_options} "${RAW_PHOTO}" || {
+          e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
+          continue
+        }
+        IFS="${SAFER_IFS}"
 
+        e_success ""
 
 
         # ---------------------------------------
@@ -564,31 +604,36 @@ function convertRawPhotos {
         # ---------------------------------------
         #  Handle output file
         # ---------------------------------------
-        printf "Mangle output file through mogrify: "
-        e_verbous "$(printf "\nmogrify %s " "${mogrify_options}")"
-        mogrify ${mogrify_options} "${output_tiff}" && e_success ""
-        if [ $verbous_mode -gt 0 ]; then
-            echo;
-        fi
+        printf "Mangle output file "
+        e_debug "$(printf "\nmogrify %s " "${mogrify_options}")"
 
+        IFS="${DEFAULT_IFS}"
+        (mogrify ${mogrify_options} "${output_tiff}") || {
+            e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
+            continue
+        }
+        IFS="${SAFER_IFS}"
+        e_success ""
+
+        # Prepare result output
+        local result_file="${output_tiff}"
 
 
         # ---------------------------------------
         # Move output file to directory, if required
         # ---------------------------------------
-        if [ "${output_directory}" != "${PWD}" ]; then
+        if [ ! -z "${output_directory}" ]; then
             mv "${output_tiff}" "${output_directory}/"
-            e_result "$(printf "Result: %s/%s" "${output_directory}" "${output_tiff}")"
-        else
-            e_result "$(printf "Result: %s" "${output_tiff}")"
+            result_file="${output_directory}/${output_tiff}"
         fi
 
 
-        # screen readability
-        echo;
-    done
+        # ---------------------------------------
+        # Print result
+        # ---------------------------------------
+        printf "Result %s" "$(e_result "${result_file}")"
 
-    exit 0
+    done
 }
 
 
@@ -686,6 +731,8 @@ function main {
     # Keeps anything that does not look like an option.
     local image_parameters=""
 
+    # Keeps anything that does not look like an option.
+    local -a image_parameters_array
 
     # getopts and getopts have inconsistent behavior, so using a simple home-brewed
     # while loop. This isn't perfectly compliant with POSIX, but it's close enough
@@ -714,6 +761,10 @@ function main {
                 desaturate_colors=1
                 recursion_arguments+=" ${__option}"
                 ;;
+            --debug)
+                debug_mode=1
+                recursion_arguments+=" ${__option}"
+                ;;
             -v|--verbous)
                 verbous_mode=1
                 recursion_arguments+=" ${__option}"
@@ -727,7 +778,7 @@ function main {
             -o|--output)
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
-                recursion_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments+=" ${__option} \"${__maybe_param}\""
                 shift
                 ;;
             -r|--resize)
@@ -748,7 +799,7 @@ function main {
                 # "Anything else must be an image parameter"
                 # This is a WORKAROUND, as without this "*)" block any given image parameters
                 # after the arguments seem to get lost (i.e., stuck in last $__option checked).
-                image_parameters+=" ${__option}"
+                image_parameters_array+=(${__option})
                 ;;
         esac
         shift
@@ -768,7 +819,7 @@ function main {
     if [ $use_batch_mode -gt 0 ]; then
         runBatchMode ${recursion_arguments}
     else
-        convertRawPhotos ${image_parameters}
+        convertRawPhotos ${image_parameters_array[@]}
     fi;
 
 }
