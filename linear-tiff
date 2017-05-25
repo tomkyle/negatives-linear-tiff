@@ -139,7 +139,6 @@ readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX") 
 # --------------------------------------
 
 # Formatting stuff
-readonly DIVIDER_LINE="------------------------------------------"
 readonly C_WHITE='\033[1;37m'
 readonly C_RED='\033[0;31m'
 readonly C_GREEN='\033[0;32m'
@@ -349,7 +348,6 @@ function runBatchMode {
     # Some stats
     local -r ELAPSED_TIME=$((SECONDS - START_TIME))
 
-    echo $DIVIDER_LINE
     echo "Some stats:"
     printf "CPUs used:     %s\n"          "${CPUs}"
     printf "Elapsed time:  %smin %ssec\n" $((ELAPSED_TIME/60)) $((ELAPSED_TIME%60))
@@ -545,7 +543,6 @@ function convertRawPhotos {
 
     for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
-        echo $DIVIDER_LINE
 
         # ---------------------------------------
         # Just in case $RAW_PHOTO is NOT a regular file
