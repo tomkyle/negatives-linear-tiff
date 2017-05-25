@@ -118,6 +118,9 @@ readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
 readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
 
 
+# --------------------------------------
+# Miscellaneous
+# --------------------------------------
 
 # Formatting stuff
 readonly DIVIDER_LINE="------------------------------------------"
