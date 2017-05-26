@@ -172,7 +172,8 @@ declare flipflop_positive=""
 
 # Where to store the output images.
 # Default ist current work directory.
-declare output_directory="${PWD}"
+#declare output_directory="${PWD}"
+declare output_directory=""
 
 
 # --------------------------------------
@@ -462,6 +463,8 @@ function convertRawPhotos {
 
     for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
+        # Screen readability hack
+        echo;
 
         # ---------------------------------------
         # Just in case $RAW_PHOTO is NOT a regular file
@@ -544,7 +547,7 @@ function convertRawPhotos {
         # ---------------------------------------
         # Print result
         # ---------------------------------------
-        printf "Result %s" "$(e_result "${result_file}")"
+        printf "Result %s\n" "$(e_result "${result_file}")"
 
     done
 }
