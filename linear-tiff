@@ -101,7 +101,7 @@ declare -i DCRAW_HIGHLIGHTS_VALUE=5
 # -q 2  Patterned Pixel Grouping (PPG) interpolation.
 # -q 3  Adaptive Homogeneity-Directed (AHD) interpolation.
 # Leave blank when needed.
-local -i DCRAW_BAYER_DEMOSAIC_VALUE=3
+declare -i DCRAW_BAYER_DEMOSAIC_VALUE=3
 
 
 # dcraw's output colorspace
@@ -113,21 +113,21 @@ local -i DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-local -i DCRAW_COLORSPACE_VALUE=1
+declare -i DCRAW_COLORSPACE_VALUE=1
 
 
 # Dcraw's image flipping
 #
 # Disable with "-t 0"
 # Leave blank to flip automatically.
-local DCRAW_FLIP_IMAGE="-t 0"
+declare DCRAW_FLIP_IMAGE="-t 0"
 
 
 # Dcraw's White balance
 #
 # -w White balance according to camera settings
 #    at the moment of the shot
-local DCRAW_WHITE_BALANCE="-w"
+declare DCRAW_WHITE_BALANCE="-w"
 
 
 
