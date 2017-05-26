@@ -433,7 +433,8 @@ function convertRawPhotos {
 
 
     # ---------------------------------------
-    # Build dcraw parameters
+    #  Linear TIFF creation:
+    #  Build dcraw parameters
     # ---------------------------------------
     local dcraw_options="$(buildDcrawOptions)"
     [ $verbous_mode -gt 0 ] \
@@ -441,6 +442,7 @@ function convertRawPhotos {
 
 
     # ---------------------------------------
+    #  How to mangle dcraw's output TIFF:
     #  Build mogrify's options string.
     # ---------------------------------------
     local mogrify_options="$(buildMogrifyOptions)"
@@ -449,7 +451,7 @@ function convertRawPhotos {
 
 
     # ---------------------------------------
-    # Create output directory if needed.
+    #  Create output directory if needed.
     # ---------------------------------------
     [ ! -z "${output_directory}" ] && mkdir -p "${output_directory[*]}"
 
