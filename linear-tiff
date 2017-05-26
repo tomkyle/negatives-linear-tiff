@@ -56,6 +56,32 @@ trap trapCleanupTempDir EXIT SIGINT
 
 
 # --------------------------------------
+# Filesystem basics
+# --------------------------------------
+
+# Filesystem basics
+readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+readonly SCRIPT_NAME=$(basename "${0}")
+
+# Consistent package location
+readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
+# Hack for development purposes
+# HOMEBREW_OPT_DIR=$SCRIPT_DIR
+
+# Prepare (but not create) a new temp directory
+readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
+
+# Where to search
+declare SEARCH_DIRECTORY='.'
+
+# What to search
+# The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
+declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+
+
+
+
+# --------------------------------------
 # User settings:
 # These settings can be set with command line arguments.
 # --------------------------------------
@@ -95,30 +121,6 @@ declare flipflop_positive=""
 # Where to store the output images.
 # Default ist current work directory.
 declare output_directory="${PWD}"
-
-
-# --------------------------------------
-# Filesystem basics
-# --------------------------------------
-
-# Filesystem basics
-readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-readonly SCRIPT_NAME=$(basename "${0}")
-
-# Consistent package location
-readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
-# Hack for development purposes
-# HOMEBREW_OPT_DIR=$SCRIPT_DIR
-
-# Prepare (but not create) a new temp directory
-readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
-
-# Where to search
-declare SEARCH_DIRECTORY='.'
-
-# What to search
-# The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
-declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 
 
 # --------------------------------------
