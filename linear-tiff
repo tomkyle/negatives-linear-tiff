@@ -432,54 +432,12 @@ function convertRawPhotos {
 
 
 
-
-
-
-    # --------------------------------------
-    # Default ICC profile.
-    # See DCRAW_COLORSPACE_VALUE
-    # --------------------------------------
-    local ICC_PROFILE_PATH=$(color-profiles srgb-linear )
-
-
     # ---------------------------------------
     # Build dcraw parameters
     # ---------------------------------------
-    local dcraw_options=""
-
-    # Add white balance setting
-    if [ ! -z "${DCRAW_WHITE_BALANCE}" ]; then
-        dcraw_options+=" ${DCRAW_WHITE_BALANCE}"
-    fi;
-
-    # Add flip image setting
-    if [ ! -z "${DCRAW_FLIP_IMAGE}" ]; then
-        dcraw_options+=" ${DCRAW_FLIP_IMAGE}"
-    fi;
-
-    # How to handle highlights
-    if [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ]; then
-        dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
-    fi;
-
-    # Add demosaicing algorithm number
-    dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
-
-    # Colorspace
-    dcraw_options+=" -o ${DCRAW_COLORSPACE_VALUE}"
-
-    # 16 bit linearity, same as "-6 -W -g 1 1"
-    dcraw_options+=" -4"
-
-    # TIFF output
-    dcraw_options+=" -T"
-
-    ### This is tooo noisy....
-    # if [ "${verbous_mode}" -gt 0 ]; then
-    #   dcraw_options="-v ${dcraw_options}"
-    #fi
-
-
+    local dcraw_options="$(buildDcrawOptions)"
+    [ $verbous_mode -gt 0 ] \
+    && printf "Create linear TIFF with: \n%s\n" "$(e_verbous "dcraw ${dcraw_options}")"
 
 
     # ---------------------------------------
@@ -488,10 +446,6 @@ function convertRawPhotos {
     local mogrify_options="$(buildMogrifyOptions)"
     [ $verbous_mode -gt 0 ] \
     && printf "Mangle dcraw output with: \n%s\n" "$(e_verbous "mogrify ${mogrify_options}")"
-
-
-
-
 
 
     # ---------------------------------------
@@ -596,42 +550,91 @@ function convertRawPhotos {
 
 
 # ======================================
+#  buildDcrawOptions
+# ======================================
+function buildDcrawOptions {
+
+    local dcraw_options=""
+
+    # Add white balance setting
+    if [ ! -z "${DCRAW_WHITE_BALANCE}" ]; then
+        dcraw_options+=" ${DCRAW_WHITE_BALANCE}"
+    fi;
+
+    # Add flip image setting
+    if [ ! -z "${DCRAW_FLIP_IMAGE}" ]; then
+        dcraw_options+=" ${DCRAW_FLIP_IMAGE}"
+    fi;
+
+    # How to handle highlights
+    if [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ]; then
+        dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
+    fi;
+
+    # Add demosaicing algorithm number
+    dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
+
+    # Colorspace
+    dcraw_options+=" -o ${DCRAW_COLORSPACE_VALUE}"
+
+    # 16 bit linearity, same as "-6 -W -g 1 1"
+    dcraw_options+=" -4"
+
+    # TIFF output
+    dcraw_options+=" -T"
+
+    ### This is tooo noisy....
+    # if [ "${verbous_mode}" -gt 0 ]; then
+    #   dcraw_options="-v ${dcraw_options}"
+    #fi
+
+    echo "${dcraw_options}"
+
+}
+
+
+# ======================================
 #  buildMogrifyOptions
 # ======================================
 function buildMogrifyOptions {
-  local mogrify_options=""
+    local mogrify_options=""
 
-  # Flip or flop the image, if required.
-  if [ ! -z "${flipflop_positive}" ]; then
+    # Flip or flop the image, if required.
+    if [ ! -z "${flipflop_positive}" ]; then
       if [ "${flipflop_positive}" = "flipflop" ]; then
           mogrify_options+=" -flip -flop"
       else
           mogrify_options+=" -${flipflop_positive}"
       fi
-  fi
+    fi
 
 
-  # Resize image on its larger side
-  if [ $resize_width -gt 0 ]; then
+    # Resize image on its larger side
+    if [ $resize_width -gt 0 ]; then
       mogrify_options+=" -resize ${resize_width}x${resize_width}>"
-  fi
+    fi
 
 
-  #  Desaturate colors, if required:
-  #  Convert to Grayscale with Gray profile embedded with gamma 1.0
-  #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
-  if [ $desaturate_colors -eq 1 ]; then
+    # Default ICC profile.
+    # See DCRAW_COLORSPACE_VALUE
+    local ICC_PROFILE_PATH=$(color-profiles srgb-linear )
+
+
+    #  Desaturate colors, if required:
+    #  Convert to Grayscale with Gray profile embedded with gamma 1.0
+    #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
+    if [ $desaturate_colors -eq 1 ]; then
       # Linear Gamma 1.0 Gray profile
       ICC_PROFILE_PATH=$(color-profiles gray-linear )
       mogrify_options+=" -modulate 100,0 -colorspace Gray"
-  fi
-  mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
+    fi
+    mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
 
 
-  #  Compress image
-  mogrify_options+=" -compress Zip "
+    #  Compress image
+    mogrify_options+=" -compress Zip "
 
-  echo "${mogrify_options}"
+    echo "${mogrify_options}"
 }
 
 
