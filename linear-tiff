@@ -485,38 +485,13 @@ function convertRawPhotos {
     # ---------------------------------------
     #  Build mogrify's options string.
     # ---------------------------------------
-    local mogrify_options=""
+    local mogrify_options="$(buildMogrifyOptions)"
+    [ $verbous_mode -gt 0 ] \
+    && printf "Mangle dcraw output with: \n%s\n" "$(e_verbous "mogrify ${mogrify_options}")"
 
 
-    # Flip or flop the image, if required.
-    if [ ! -z "${flipflop_positive}" ]; then
-        if [ "${flipflop_positive}" = "flipflop" ]; then
-            mogrify_options+=" -flip -flop"
-        else
-            mogrify_options+=" -${flipflop_positive}"
-        fi
-    fi
 
 
-    # Resize image on its larger side
-    if [ $resize_width -gt 0 ]; then
-        mogrify_options+=" -resize ${resize_width}x${resize_width}>"
-    fi
-
-
-    #  Desaturate colors, if required:
-    #  Convert to Grayscale with Gray profile embedded with gamma 1.0
-    #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
-    if [ $desaturate_colors -eq 1 ]; then
-        # Linear Gamma 1.0 Gray profile
-        ICC_PROFILE_PATH=$(color-profiles gray-linear )
-        mogrify_options+=" -modulate 100,0 -colorspace Gray"
-    fi
-    mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
-
-
-    #  Compress image
-    mogrify_options+=" -compress Zip "
 
 
     # ---------------------------------------
@@ -620,6 +595,44 @@ function convertRawPhotos {
 }
 
 
+# ======================================
+#  buildMogrifyOptions
+# ======================================
+function buildMogrifyOptions {
+  local mogrify_options=""
+
+  # Flip or flop the image, if required.
+  if [ ! -z "${flipflop_positive}" ]; then
+      if [ "${flipflop_positive}" = "flipflop" ]; then
+          mogrify_options+=" -flip -flop"
+      else
+          mogrify_options+=" -${flipflop_positive}"
+      fi
+  fi
+
+
+  # Resize image on its larger side
+  if [ $resize_width -gt 0 ]; then
+      mogrify_options+=" -resize ${resize_width}x${resize_width}>"
+  fi
+
+
+  #  Desaturate colors, if required:
+  #  Convert to Grayscale with Gray profile embedded with gamma 1.0
+  #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
+  if [ $desaturate_colors -eq 1 ]; then
+      # Linear Gamma 1.0 Gray profile
+      ICC_PROFILE_PATH=$(color-profiles gray-linear )
+      mogrify_options+=" -modulate 100,0 -colorspace Gray"
+  fi
+  mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
+
+
+  #  Compress image
+  mogrify_options+=" -compress Zip "
+
+  echo "${mogrify_options}"
+}
 
 
 
