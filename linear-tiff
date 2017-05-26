@@ -503,16 +503,15 @@ function convertRawPhotos {
         }
         IFS="${SAFER_IFS}"
 
-        e_success ""
-
-
-        # ---------------------------------------
         # Just in case dcraw has NOT written an output file:
-        # ---------------------------------------
         if [ ! -f "${output_tiff}" ]; then
             e_warning "$(printf "Hmmm. Expected dcraw to have written '%s'; In fact, this file does not exist?\n" "${output_tiff}")"
             continue
         fi
+
+        e_success ""
+
+
 
 
         # ---------------------------------------
