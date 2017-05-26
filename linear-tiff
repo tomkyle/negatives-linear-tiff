@@ -439,8 +439,7 @@ function convertRawPhotos {
     # Default ICC profile.
     # See DCRAW_COLORSPACE_VALUE
     # --------------------------------------
-    local ICC_PROFILE_PATH
-    ICC_PROFILE_PATH=$(color-profiles srgb-linear )
+    local ICC_PROFILE_PATH=$(color-profiles srgb-linear )
 
 
     # ---------------------------------------
