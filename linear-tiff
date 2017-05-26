@@ -21,28 +21,24 @@
 # *******************************************************
 
 
-
-# ======================================
 # Runtime Environment
-# ======================================
-
 set -o errexit
 set -o nounset
 set -o pipefail
 # set -o xtrace
 
 
-# --------------------------------------
-# Global Requirements
-# --------------------------------------
+# Internal Field Separator
+readonly DEFAULT_IFS="${IFS}"
+readonly SAFER_IFS=$'\n\t'
+IFS="${SAFER_IFS}"
+
+
+# Check on Requirements
 function require  {
     command -v "${1}" >/dev/null 2>&1 || e_error "$(printf "Program '%s' required, but it's not installed" "${1}")"
 }
 
-
-# --------------------------------------
-# Global settings
-# --------------------------------------
 
 # Default Exit or SIGINT(2) handler
 function trapCleanupTempDir() {
@@ -56,6 +52,23 @@ function trapCleanupTempDir() {
 trap trapCleanupTempDir EXIT SIGINT
 
 
+
+# --------------------------------------
+# Filesystem basics
+# --------------------------------------
+
+# Filesystem basics
+readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+readonly SCRIPT_NAME=$(basename "${0}")
+
+# Consistent package location
+readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
+# Hack for development purposes
+# HOMEBREW_OPT_DIR=$SCRIPT_DIR
+
+# Prepare (but not create) a new temp directory
+readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
+
 # Where to search
 declare SEARCH_DIRECTORY='.'
 
@@ -65,9 +78,71 @@ declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 
 
 # --------------------------------------
+# Global settings:
+# --------------------------------------
+
+# Dcraw output
+#
+# Default extension of dcraw's TIFF output
+declare DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
+
+
+# Clip highlights method
+#
+# -H 0 Clip all highlights to solid white (default).
+# -H 5 as a compromise
+declare -i DCRAW_HIGHLIGHTS_VALUE=5
+
+
+# Bayer demosaicing algorithm dcraw should use
+#
+# -q 0  Use high-speed, low-quality bilinear interpolation.
+# -q 1  Variable Number of Gradients (VNG) interpolation.
+# -q 2  Patterned Pixel Grouping (PPG) interpolation.
+# -q 3  Adaptive Homogeneity-Directed (AHD) interpolation.
+# Leave blank when needed.
+declare -i DCRAW_BAYER_DEMOSAIC_VALUE=3
+
+
+# dcraw's output colorspace
+#
+# 0   Raw color (unique to each camera)
+# 1   sRGB D65 (default)
+# 2   Adobe RGB (1998) D65
+# 3   Wide Gamut RGB D65
+# 4   Kodak ProPhoto RGB D65
+# 5   XYZ
+# 6   ACES
+declare -i DCRAW_COLORSPACE_VALUE=1
+
+
+# Dcraw's image flipping
+#
+# Disable with "-t 0"
+# Leave blank to flip automatically.
+declare DCRAW_FLIP_IMAGE="-t 0"
+
+
+# Dcraw's White balance
+#
+# -w White balance according to camera settings
+#    at the moment of the shot
+declare DCRAW_WHITE_BALANCE="-w"
+
+
+
+
+
+# --------------------------------------
 # User settings:
 # These settings can be set with command line arguments.
 # --------------------------------------
+
+
+# List of possible script arguments (getopts)
+# Very much like getopts, expected short options should be appended to the
+# string here. Any option followed by a ':' takes a required argument.
+readonly OPTIONS_LIST="ahdvf:o:r:"
 
 # Verbous mode:
 # Disabled per default; enable with -v flag
@@ -97,42 +172,8 @@ declare flipflop_positive=""
 
 # Where to store the output images.
 # Default ist current work directory.
-declare output_directory="${PWD}"
-
-
-# --------------------------------------
-# Immutables
-# --------------------------------------
-
-# List of possible script arguments (getopts)
-# Very much like getopts, expected short options should be appended to the
-# string here. Any option followed by a ':' takes a required argument.
-readonly OPTIONS_LIST="ahdvf:o:r:"
-
-
-# Internal Field Separator
-### While this is recommended in "best-practice tutorials",
-### this breaks calling dcraw and mogrify. Better let this commented-out.
-readonly DEFAULT_IFS="${IFS}"
-readonly SAFER_IFS=$'\n\t'
-IFS="${SAFER_IFS}"
-
-
-# --------------------------------------
-# Filesystem basics
-# --------------------------------------
-
-# Filesystem basics
-readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-readonly SCRIPT_NAME=$(basename "${0}")
-
-# Consistent package location
-readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
-# Hack for development purposes
-# HOMEBREW_OPT_DIR=$SCRIPT_DIR
-
-# Prepare (but not create) a new temp directory
-readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
+#declare output_directory="${PWD}"
+declare output_directory=""
 
 
 # --------------------------------------
@@ -391,153 +432,27 @@ function convertRawPhotos {
     local -r INPUT_FILES=("${@}")
 
 
-    # --------------------------------------
-    # DCRAW settings
-    # --------------------------------------
 
-
-    # Dcraw output
-    #
-    # Default extension of dcraw's TIFF output
-    local DCRAW_DEFAULT_TIFF_EXTENSION
-    DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
-
-
-    # Clip highlights method
-    #
-    # -H 0 Clip all highlights to solid white (default).
-    # -H 5 as a compromise
-    local DCRAW_HIGHLIGHTS_VALUE
-    DCRAW_HIGHLIGHTS_VALUE=5
-
-
-    # Bayer demosaicing algorithm dcraw should use
-    #
-    # -q 0  Use high-speed, low-quality bilinear interpolation.
-    # -q 1  Variable Number of Gradients (VNG) interpolation.
-    # -q 2  Patterned Pixel Grouping (PPG) interpolation.
-    # -q 3  Adaptive Homogeneity-Directed (AHD) interpolation.
-    # Leave blank when needed.
-    local DCRAW_BAYER_DEMOSAIC_VALUE
-    DCRAW_BAYER_DEMOSAIC_VALUE=3
-
-
-    # dcraw's output colorspace
-    #
-    # 0   Raw color (unique to each camera)
-    # 1   sRGB D65 (default)
-    # 2   Adobe RGB (1998) D65
-    # 3   Wide Gamut RGB D65
-    # 4   Kodak ProPhoto RGB D65
-    # 5   XYZ
-    # 6   ACES
-    local DCRAW_COLORSPACE_VALUE
-    DCRAW_COLORSPACE_VALUE=1
-
-
-    # Dcraw's image flipping
-    #
-    # Disable with "-t 0"
-    # Leave blank to flip automatically.
-    local DCRAW_FLIP_IMAGE
-    DCRAW_FLIP_IMAGE="-t 0"
-
-
-    # Dcraw's White balance
-    #
-    # -w White balance according to camera settings
-    #    at the moment of the shot
-    local DCRAW_WHITE_BALANCE
-    DCRAW_WHITE_BALANCE="-w"
-
-
-    # --------------------------------------
-    # Default ICC profile.
-    # See DCRAW_COLORSPACE_VALUE
-    # --------------------------------------
-    local ICC_PROFILE_PATH
-    ICC_PROFILE_PATH=$(color-profiles srgb-linear )
+    # ---------------------------------------
+    #  Linear TIFF creation:
+    #  Build dcraw parameters
+    # ---------------------------------------
+    local dcraw_options="$(buildDcrawOptions)"
+    [ $verbous_mode -gt 0 ] \
+    && printf "Create linear TIFF with: \n%s\n" "$(e_verbous "dcraw ${dcraw_options}")"
 
 
     # ---------------------------------------
-    # Build dcraw parameters
-    # ---------------------------------------
-    local dcraw_options=""
-
-    # Add white balance setting
-    if [ ! -z "${DCRAW_WHITE_BALANCE}" ]; then
-        dcraw_options+=" ${DCRAW_WHITE_BALANCE}"
-    fi;
-
-    # Add flip image setting
-    if [ ! -z "${DCRAW_FLIP_IMAGE}" ]; then
-        dcraw_options+=" ${DCRAW_FLIP_IMAGE}"
-    fi;
-
-    # How to handle highlights
-    if [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ]; then
-        dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
-    fi;
-
-    # Add demosaicing algorithm number
-    dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
-
-    # Colorspace
-    dcraw_options+=" -o ${DCRAW_COLORSPACE_VALUE}"
-
-    # 16 bit linearity, same as "-6 -W -g 1 1"
-    dcraw_options+=" -4"
-
-    # TIFF output
-    dcraw_options+=" -T"
-
-    ### This is tooo noisy....
-    # if [ "${verbous_mode}" -gt 0 ]; then
-    #   dcraw_options="-v ${dcraw_options}"
-    #fi
-
-
-
-
-    # ---------------------------------------
+    #  How to mangle dcraw's output TIFF:
     #  Build mogrify's options string.
     # ---------------------------------------
-    local mogrify_options=""
-
-
-    # Flip or flop the image, if required.
-    if [ ! -z "${flipflop_positive}" ]; then
-        if [ "${flipflop_positive}" = "flipflop" ]; then
-            mogrify_options+=" -flip -flop"
-        else
-            mogrify_options+=" -${flipflop_positive}"
-        fi
-    fi
-
-
-    # Resize image on its larger side
-    if [ $resize_width -gt 0 ]; then
-        mogrify_options+=" -resize ${resize_width}x${resize_width}>"
-    fi
-
-
-    #  Desaturate colors, if required:
-    #  Convert to Grayscale with Gray profile embedded with gamma 1.0
-    #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
-    if [ $desaturate_colors -eq 1 ]; then
-        # Linear Gamma 1.0 Gray profile
-        ICC_PROFILE_PATH=$(color-profiles gray-linear )
-        mogrify_options+=" -modulate 100,0 -colorspace Gray"
-    fi
-    mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
-
-
-    #  Compress image
-    mogrify_options+=" -compress Zip "
+    local mogrify_options="$(buildMogrifyOptions)"
+    [ $verbous_mode -gt 0 ] \
+    && printf "Mangle dcraw output with: \n%s\n" "$(e_verbous "mogrify ${mogrify_options}")"
 
 
     # ---------------------------------------
-    # Create output directory if needed.
+    #  Create output directory if needed.
     # ---------------------------------------
     [ ! -z "${output_directory}" ] && mkdir -p "${output_directory[*]}"
 
@@ -548,6 +463,8 @@ function convertRawPhotos {
 
     for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
+        # Screen readability hack
+        echo;
 
         # ---------------------------------------
         # Just in case $RAW_PHOTO is NOT a regular file
@@ -589,16 +506,15 @@ function convertRawPhotos {
         }
         IFS="${SAFER_IFS}"
 
-        e_success ""
-
-
-        # ---------------------------------------
         # Just in case dcraw has NOT written an output file:
-        # ---------------------------------------
         if [ ! -f "${output_tiff}" ]; then
             e_warning "$(printf "Hmmm. Expected dcraw to have written '%s'; In fact, this file does not exist?\n" "${output_tiff}")"
             continue
         fi
+
+        e_success ""
+
+
 
 
         # ---------------------------------------
@@ -631,12 +547,99 @@ function convertRawPhotos {
         # ---------------------------------------
         # Print result
         # ---------------------------------------
-        printf "Result %s" "$(e_result "${result_file}")"
+        printf "Result %s\n" "$(e_result "${result_file}")"
 
     done
 }
 
 
+# ======================================
+#  buildDcrawOptions
+# ======================================
+function buildDcrawOptions {
+
+    local dcraw_options=""
+
+    # Add white balance setting
+    if [ ! -z "${DCRAW_WHITE_BALANCE}" ]; then
+        dcraw_options+=" ${DCRAW_WHITE_BALANCE}"
+    fi;
+
+    # Add flip image setting
+    if [ ! -z "${DCRAW_FLIP_IMAGE}" ]; then
+        dcraw_options+=" ${DCRAW_FLIP_IMAGE}"
+    fi;
+
+    # How to handle highlights
+    if [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ]; then
+        dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
+    fi;
+
+    # Add demosaicing algorithm number
+    dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
+
+    # Colorspace
+    dcraw_options+=" -o ${DCRAW_COLORSPACE_VALUE}"
+
+    # 16 bit linearity, same as "-6 -W -g 1 1"
+    dcraw_options+=" -4"
+
+    # TIFF output
+    dcraw_options+=" -T"
+
+    ### This is tooo noisy....
+    # if [ "${verbous_mode}" -gt 0 ]; then
+    #   dcraw_options="-v ${dcraw_options}"
+    #fi
+
+    echo "${dcraw_options}"
+
+}
+
+
+# ======================================
+#  buildMogrifyOptions
+# ======================================
+function buildMogrifyOptions {
+    local mogrify_options=""
+
+    # Flip or flop the image, if required.
+    if [ ! -z "${flipflop_positive}" ]; then
+      if [ "${flipflop_positive}" = "flipflop" ]; then
+          mogrify_options+=" -flip -flop"
+      else
+          mogrify_options+=" -${flipflop_positive}"
+      fi
+    fi
+
+
+    # Resize image on its larger side
+    if [ $resize_width -gt 0 ]; then
+      mogrify_options+=" -resize ${resize_width}x${resize_width}>"
+    fi
+
+
+    # Default ICC profile.
+    # See DCRAW_COLORSPACE_VALUE
+    local ICC_PROFILE_PATH=$(color-profiles srgb-linear )
+
+
+    #  Desaturate colors, if required:
+    #  Convert to Grayscale with Gray profile embedded with gamma 1.0
+    #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
+    if [ $desaturate_colors -eq 1 ]; then
+      # Linear Gamma 1.0 Gray profile
+      ICC_PROFILE_PATH=$(color-profiles gray-linear )
+      mogrify_options+=" -modulate 100,0 -colorspace Gray"
+    fi
+    mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
+
+
+    #  Compress image
+    mogrify_options+=" -compress Zip "
+
+    echo "${mogrify_options}"
+}
 
 
 
