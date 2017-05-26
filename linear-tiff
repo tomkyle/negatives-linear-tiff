@@ -77,6 +77,60 @@ declare SEARCH_DIRECTORY='.'
 declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 
 
+# --------------------------------------
+# Global settings:
+# --------------------------------------
+
+# Dcraw output
+#
+# Default extension of dcraw's TIFF output
+declare DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
+
+
+# Clip highlights method
+#
+# -H 0 Clip all highlights to solid white (default).
+# -H 5 as a compromise
+declare -i DCRAW_HIGHLIGHTS_VALUE=5
+
+
+# Bayer demosaicing algorithm dcraw should use
+#
+# -q 0  Use high-speed, low-quality bilinear interpolation.
+# -q 1  Variable Number of Gradients (VNG) interpolation.
+# -q 2  Patterned Pixel Grouping (PPG) interpolation.
+# -q 3  Adaptive Homogeneity-Directed (AHD) interpolation.
+# Leave blank when needed.
+local -i DCRAW_BAYER_DEMOSAIC_VALUE=3
+
+
+# dcraw's output colorspace
+#
+# 0   Raw color (unique to each camera)
+# 1   sRGB D65 (default)
+# 2   Adobe RGB (1998) D65
+# 3   Wide Gamut RGB D65
+# 4   Kodak ProPhoto RGB D65
+# 5   XYZ
+# 6   ACES
+local -i DCRAW_COLORSPACE_VALUE=1
+
+
+# Dcraw's image flipping
+#
+# Disable with "-t 0"
+# Leave blank to flip automatically.
+local DCRAW_FLIP_IMAGE="-t 0"
+
+
+# Dcraw's White balance
+#
+# -w White balance according to camera settings
+#    at the moment of the shot
+local DCRAW_WHITE_BALANCE="-w"
+
+
+
 
 
 # --------------------------------------
@@ -377,64 +431,8 @@ function convertRawPhotos {
     local -r INPUT_FILES=("${@}")
 
 
-    # --------------------------------------
-    # DCRAW settings
-    # --------------------------------------
 
 
-    # Dcraw output
-    #
-    # Default extension of dcraw's TIFF output
-    local DCRAW_DEFAULT_TIFF_EXTENSION
-    DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
-
-
-    # Clip highlights method
-    #
-    # -H 0 Clip all highlights to solid white (default).
-    # -H 5 as a compromise
-    local DCRAW_HIGHLIGHTS_VALUE
-    DCRAW_HIGHLIGHTS_VALUE=5
-
-
-    # Bayer demosaicing algorithm dcraw should use
-    #
-    # -q 0  Use high-speed, low-quality bilinear interpolation.
-    # -q 1  Variable Number of Gradients (VNG) interpolation.
-    # -q 2  Patterned Pixel Grouping (PPG) interpolation.
-    # -q 3  Adaptive Homogeneity-Directed (AHD) interpolation.
-    # Leave blank when needed.
-    local DCRAW_BAYER_DEMOSAIC_VALUE
-    DCRAW_BAYER_DEMOSAIC_VALUE=3
-
-
-    # dcraw's output colorspace
-    #
-    # 0   Raw color (unique to each camera)
-    # 1   sRGB D65 (default)
-    # 2   Adobe RGB (1998) D65
-    # 3   Wide Gamut RGB D65
-    # 4   Kodak ProPhoto RGB D65
-    # 5   XYZ
-    # 6   ACES
-    local DCRAW_COLORSPACE_VALUE
-    DCRAW_COLORSPACE_VALUE=1
-
-
-    # Dcraw's image flipping
-    #
-    # Disable with "-t 0"
-    # Leave blank to flip automatically.
-    local DCRAW_FLIP_IMAGE
-    DCRAW_FLIP_IMAGE="-t 0"
-
-
-    # Dcraw's White balance
-    #
-    # -w White balance according to camera settings
-    #    at the moment of the shot
-    local DCRAW_WHITE_BALANCE
-    DCRAW_WHITE_BALANCE="-w"
 
 
     # --------------------------------------
