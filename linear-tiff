@@ -69,6 +69,12 @@ declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 # These settings can be set with command line arguments.
 # --------------------------------------
 
+
+# List of possible script arguments (getopts)
+# Very much like getopts, expected short options should be appended to the
+# string here. Any option followed by a ':' takes a required argument.
+readonly OPTIONS_LIST="ahdvf:o:r:"
+
 # Verbous mode:
 # Disabled per default; enable with -v flag
 declare -i verbous_mode=0;
@@ -103,11 +109,6 @@ declare output_directory="${PWD}"
 # --------------------------------------
 # Immutables
 # --------------------------------------
-
-# List of possible script arguments (getopts)
-# Very much like getopts, expected short options should be appended to the
-# string here. Any option followed by a ':' takes a required argument.
-readonly OPTIONS_LIST="ahdvf:o:r:"
 
 
 # Internal Field Separator
