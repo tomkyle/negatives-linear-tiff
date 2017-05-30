@@ -142,7 +142,7 @@ declare DCRAW_WHITE_BALANCE="-w"
 # List of possible script arguments (getopts)
 # Very much like getopts, expected short options should be appended to the
 # string here. Any option followed by a ':' takes a required argument.
-readonly OPTIONS_LIST="ahdvf:o:r:"
+readonly OPTIONS_LIST="achdvf:o:r:"
 
 # Verbous mode:
 # Disabled per default; enable with -v flag
@@ -174,6 +174,9 @@ declare flipflop_positive=""
 # Default ist current work directory.
 #declare output_directory="${PWD}"
 declare output_directory=""
+
+# Crop method. No crop if left empty.
+declare crop_output=""
 
 
 # --------------------------------------
@@ -492,6 +495,7 @@ function convertRawPhotos {
 
         # Build output filename as dcraw would do
         local output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
+        local xmp_sidecar_file="${input_file_basename}.xmp"
 
 
         # ---------------------------------------
@@ -515,6 +519,18 @@ function convertRawPhotos {
         e_success ""
 
 
+        # ---------------------------------------
+        # Consider individual image crop settings
+        # ---------------------------------------
+        if [ ! -z "${crop_output}" ]; then
+            local cropping_mogrify_options="$(buildMogrifyCropOptions ${RAW_PHOTO} ${xmp_sidecar_file})"
+            if [ -n "${cropping_mogrify_options}" ]; then
+                printf "Prepare cropping "
+                e_debug "$(printf "\n%s " "${cropping_mogrify_options}")"
+                mogrify_options="${cropping_mogrify_options} ${mogrify_options}"
+                e_success ""
+            fi
+        fi
 
 
         # ---------------------------------------
@@ -522,6 +538,7 @@ function convertRawPhotos {
         # ---------------------------------------
         printf "Mangle output file "
         e_debug "$(printf "\nmogrify %s " "${mogrify_options}")"
+
 
         IFS="${DEFAULT_IFS}"
         (mogrify ${mogrify_options} "${output_tiff}") || {
@@ -598,6 +615,92 @@ function buildDcrawOptions {
 
 
 # ======================================
+#  buildMogrifyCropOptions
+#    Usage: buildMogrifyCropOptions <input_file> <xmp_sidecar>
+# ======================================
+function buildMogrifyCropOptions {
+
+    # Requirements
+    local input_file="${1}"
+    local xmp_file="${2}"
+
+    # Prepare results
+    local crop_options=""
+
+    # Grab original image dimensions
+    local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+    local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+
+
+    # -----------------------------------------
+    # Create Shave parameter:
+    # This will eliminate the difference between RAW pixel size and
+    # the size displayed in Raw converters.
+    # Example: While the NEF file is 6016x4016 pixels,
+    # Adobe Camera Raw will display 6000x4000, according to the embedded JPG thumbnail.
+    # -----------------------------------------
+
+    local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
+    local thumbnail_width
+    local thumbnail_height
+
+    if [ -n "${has_embedded_jpg}" ]; then
+        local temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+        exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
+        thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
+        thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
+    fi
+    if [ $thumbnail_width -gt 0 -a $thumbnail_height -gt 0 ]; then
+        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
+        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
+
+        # Add Shave information
+        crop_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
+    fi;
+
+
+    # -----------------------------------------
+    # Construct the crop parameters
+    # -----------------------------------------
+
+    # 1. Check if crop data is in either work_file or XMP sidecar
+    local work_file="${input_file}"
+    local has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
+    if [ "${has_crop}" != "True" -a -f "${xmp_file}" ]; then
+        has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
+        if [ "${has_crop}" = "True" ]; then
+            work_file="${xmp_file}"
+        fi
+    fi
+
+    # 2. Do calculations
+    if [ "${has_crop}" = "True" ]; then
+
+        # Fetch percentage
+        local CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
+        local CropBottom="$(exiftool -s -s -s -CropBottom "${work_file}")"
+        local CropLeft="$(exiftool -s -s -s -CropLeft "${work_file}")"
+        local CropRight="$(exiftool -s -s -s -CropRight "${work_file}")"
+
+        # Calc remaining width and height, after crop, in percentage.
+        local width_perc=$(echo "($CropRight - $CropLeft) * 100" | bc -l)
+        local height_perc=$(echo "($CropBottom - $CropTop) * 100" | bc -l)
+
+        # Calc offsets in pixel
+        local offset_horizontal=$(echo "$image_width * $CropLeft" | bc -l)
+        local offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
+
+        # 3. Finally, add crop information
+        crop_options+=" -crop ${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}"
+    fi
+
+    # Print result
+    echo "${crop_options}"
+}
+
+
+
+# ======================================
 #  buildMogrifyOptions
 # ======================================
 function buildMogrifyOptions {
@@ -611,6 +714,7 @@ function buildMogrifyOptions {
           mogrify_options+=" -${flipflop_positive}"
       fi
     fi
+
 
 
     # Resize image on its larger side
@@ -759,6 +863,12 @@ function main {
                 ;;
             -a|--all)
                 use_batch_mode=1
+                ;;
+            -c|--crop)
+                _require_argument "${__option}" "${__maybe_param}"
+                crop_output="${__maybe_param}"
+                recursion_arguments+=" ${__option} ${__maybe_param}"
+                shift
                 ;;
             -d|--desaturate)
                 desaturate_colors=1
