@@ -666,8 +666,7 @@ function buildMogrifyCropOptions {
     # 1. Check if crop data is in either work_file or XMP sidecar
     local work_file="${input_file}"
     local has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
-    if [ "${has_crop}" != "True" -a -f "${xmp_file}"]; then
-
+    if [ "${has_crop}" != "True" -a -f "${xmp_file}" ]; then
         has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
         if [ "${has_crop}" = "True" ]; then
             work_file="${xmp_file}"
