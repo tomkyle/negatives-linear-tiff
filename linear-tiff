@@ -649,11 +649,11 @@ function buildMogrifyCropOptions {
         thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
     fi
     if [ $thumbnail_width -gt 0 -a $thumbnail_height -gt 0 ]; then
-        shavediff_h=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
-        shavediff_v=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
+        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
+        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
 
         # Add Shave information
-        crop_options+=" -shave ${shavediff_h}x${shavediff_v}"
+        crop_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
     fi;
 
 
