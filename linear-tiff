@@ -619,12 +619,13 @@ function buildDcrawOptions {
 #    Usage: buildMogrifyCropOptions <input_file> <xmp_sidecar>
 # ======================================
 function buildMogrifyCropOptions {
+
+    # Requirements
     local input_file="${1}"
     local xmp_file="${2}"
 
-
+    # Prepare results
     local crop_options=""
-
 
     # Grab original image dimensions
     local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
