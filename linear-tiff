@@ -683,7 +683,7 @@ function buildMogrifyCropOptions {
         local CropLeft="$(exiftool -s -s -s -CropLeft "${work_file}")"
         local CropRight="$(exiftool -s -s -s -CropRight "${work_file}")"
 
-        # Calc percentual crop width and height
+        # Calc remaining width and height, after crop, in percentage.
         local width_perc=$(echo "($CropRight - $CropLeft) * 100" | bc -l)
         local height_perc=$(echo "($CropBottom - $CropTop) * 100" | bc -l)
 
