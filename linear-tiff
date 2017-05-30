@@ -518,6 +518,17 @@ function convertRawPhotos {
         e_success ""
 
 
+        # ---------------------------------------
+        # Consider individual image crop settings
+        # ---------------------------------------
+        local cropping_mogrify_options="$(buildMogrifyCropOptions ${output_tiff})"
+        if [ -n "${cropping_mogrify_options}" ]; then
+            printf "Prepare cropping "
+            e_debug "$(printf "\n%s " "${cropping_mogrify_options}")"
+            mogrify_options="${cropping_mogrify_options} ${mogrify_options}"
+            e_success ""
+        fi
+
 
 
         # ---------------------------------------
@@ -525,6 +536,7 @@ function convertRawPhotos {
         # ---------------------------------------
         printf "Mangle output file "
         e_debug "$(printf "\nmogrify %s " "${mogrify_options}")"
+
 
         IFS="${DEFAULT_IFS}"
         (mogrify ${mogrify_options} "${output_tiff}") || {
@@ -601,6 +613,26 @@ function buildDcrawOptions {
 
 
 # ======================================
+#  buildMogrifyCropOptions
+#    Usage: buildMogrifyCropOptions <input_file>
+# ======================================
+function buildMogrifyCropOptions {
+    local input_file="${1}"
+
+    local crop_options=""
+
+    if [ ! -z $crop_output ]; then
+      OFFSETX=$(identify -format '%[fx:w/4]' "${input_file}")
+      OFFSETY=$(identify -format '%[fx:h/4]' "${input_file}")
+      crop_options+=" -crop 50%x50%+${OFFSETX}+${OFFSETY}"
+    fi
+
+    echo "${crop_options}"
+}
+
+
+
+# ======================================
 #  buildMogrifyOptions
 # ======================================
 function buildMogrifyOptions {
@@ -614,7 +646,6 @@ function buildMogrifyOptions {
           mogrify_options+=" -${flipflop_positive}"
       fi
     fi
-
 
 
 
@@ -769,6 +800,7 @@ function main {
                 _require_argument "${__option}" "${__maybe_param}"
                 crop_output="${__maybe_param}"
                 recursion_arguments+=" ${__option} ${__maybe_param}"
+                shift
                 ;;
             -d|--desaturate)
                 desaturate_colors=1
