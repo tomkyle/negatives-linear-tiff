@@ -639,9 +639,11 @@ function buildMogrifyCropOptions {
     # Example: While the NEF file is 6016x4016 pixels,
     # Adobe Camera Raw will display 6000x4000, according to the embedded JPG thumbnail.
     # -----------------------------------------
+
     local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
     local thumbnail_width
     local thumbnail_height
+
     if [ -n "${has_embedded_jpg}" ]; then
         local temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
         exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
@@ -660,19 +662,19 @@ function buildMogrifyCropOptions {
     # -----------------------------------------
     # Construct the crop parameters
     # -----------------------------------------
+
+    # 1. Check if crop data is in either work_file or XMP sidecar
     local work_file="${input_file}"
     local has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
-    if [ "${has_crop}" != "True" ]; then
-        if [ -f "${xmp_file}" ]; then
-            has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
-            if [ "${has_crop}" = "True" ]; then
-                work_file="${xmp_file}"
-            fi
-        else
-            has_crop=""
+    if [ "${has_crop}" != "True" -a -f "${xmp_file}"]; then
+
+        has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
+        if [ "${has_crop}" = "True" ]; then
+            work_file="${xmp_file}"
         fi
     fi
 
+    # 2. Do calculations
     if [ "${has_crop}" = "True" ]; then
 
         # Fetch percentage
@@ -689,7 +691,7 @@ function buildMogrifyCropOptions {
         local offset_horizontal=$(echo "$image_width * $CropLeft" | bc -l)
         local offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
 
-        # Finally, add crop information
+        # 3. Finally, add crop information
         crop_options+=" -crop ${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}"
     fi
 
