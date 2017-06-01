@@ -45,6 +45,10 @@ $ linear-tiff [options] [-a | file(s)]
 #### -a, --all
 All images — process any RAW/NEF/CR2 file in working directory, using GNU Parallel.
 
+#### -c, --crop    
+Crop output image, if input file's meta data carry crop information.
+Useful when cropping film holder parts away with your Raw converter—The output image will then be cropped as well, even if the crop info is stored a XMP sidecar file. *Currently, no crop angles are supported.*
+              
 #### --debug
 Switch on debugging mode, showing everything that's going on.
 
