@@ -867,7 +867,6 @@ function main {
             -c|--crop)
                 crop_output=1
                 recursion_arguments+=" ${__option}"
-                shift
                 ;;
             -d|--desaturate)
                 desaturate_colors=1
