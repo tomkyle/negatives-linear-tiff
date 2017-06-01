@@ -19,6 +19,11 @@ OPTIONS:
 
 --debug       Turn on debugging mode, showing whats going on.
 
+-c, --crop    Crop output, if input file's meta data carry crop information.
+              So you can crop your Camera file with e.g. Adobe Camera Raw
+              which will store the crop info in a XMP sidecar file.
+              The output image will be cropped basing on this information.
+
 -d, --desaturate
               Desaturate colors, which is recommended for B/W negatives.
               Converts dcraw's TIFF output to 16-bit grayscale,

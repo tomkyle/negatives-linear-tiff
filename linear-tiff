@@ -176,7 +176,7 @@ declare flipflop_positive=""
 declare output_directory=""
 
 # Crop method. No crop if left empty.
-declare crop_output=""
+declare -i crop_output=0
 
 
 # --------------------------------------
@@ -522,7 +522,7 @@ function convertRawPhotos {
         # ---------------------------------------
         # Consider individual image crop settings
         # ---------------------------------------
-        if [ ! -z "${crop_output}" ]; then
+        if [ $crop_output -gt 0 ]; then
             local cropping_mogrify_options="$(buildMogrifyCropOptions ${RAW_PHOTO} ${xmp_sidecar_file})"
             if [ -n "${cropping_mogrify_options}" ]; then
                 printf "Prepare cropping "
@@ -865,10 +865,8 @@ function main {
                 use_batch_mode=1
                 ;;
             -c|--crop)
-                _require_argument "${__option}" "${__maybe_param}"
-                crop_output="${__maybe_param}"
-                recursion_arguments+=" ${__option} ${__maybe_param}"
-                shift
+                crop_output=1
+                recursion_arguments+=" ${__option}"
                 ;;
             -d|--desaturate)
                 desaturate_colors=1
