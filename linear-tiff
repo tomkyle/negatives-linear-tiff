@@ -614,6 +614,53 @@ function buildDcrawOptions {
 }
 
 
+
+
+# ======================================
+#  buildMogrifyShaveOptions
+#
+#  Create Shave parameter to eliminate the difference between
+#  RAW pixel size and the size displayed in Raw converters.
+#  Example: While the NEF file is 6016x4016 pixels,
+# Adobe Camera Raw will display 6000x4000, according to the embedded JPG thumbnail.
+#
+#    Usage: buildMogrifyShaveOptions <input_file>
+# ======================================
+function buildMogrifyShaveOptions {
+    # Requirements
+    require exiftool
+    local input_file="${1}"
+
+    # Grab original image dimensions
+    local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+    local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+
+    local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
+    local thumbnail_width
+    local thumbnail_height
+
+    # Prepare results
+    local shave_options=""
+
+    if [ -n "${has_embedded_jpg}" ]; then
+        local temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+        exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
+        thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
+        thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
+    fi
+    if [ $thumbnail_width -gt 0 -a $thumbnail_height -gt 0 ]; then
+        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
+        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
+
+        # Add Shave information
+        shave_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
+    fi;
+
+    echo "${shave_options}"
+}
+
+
+
 # ======================================
 #  buildMogrifyCropOptions
 #    Usage: buildMogrifyCropOptions <input_file> <xmp_sidecar>
@@ -627,37 +674,6 @@ function buildMogrifyCropOptions {
     # Prepare results
     local crop_options=""
 
-    # Grab original image dimensions
-    local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
-    local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
-
-
-    # -----------------------------------------
-    # Create Shave parameter:
-    # This will eliminate the difference between RAW pixel size and
-    # the size displayed in Raw converters.
-    # Example: While the NEF file is 6016x4016 pixels,
-    # Adobe Camera Raw will display 6000x4000, according to the embedded JPG thumbnail.
-    # -----------------------------------------
-
-    local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
-    local thumbnail_width
-    local thumbnail_height
-
-    if [ -n "${has_embedded_jpg}" ]; then
-        local temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
-        exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
-        thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
-        thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
-    fi
-    if [ $thumbnail_width -gt 0 -a $thumbnail_height -gt 0 ]; then
-        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
-        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
-
-        # Add Shave information
-        crop_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
-    fi;
-
 
     # -----------------------------------------
     # Construct the crop parameters
@@ -666,6 +682,7 @@ function buildMogrifyCropOptions {
     # 1. Check if crop data is in either work_file or XMP sidecar
     local work_file="${input_file}"
     local has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
+
     if [ "${has_crop}" != "True" -a -f "${xmp_file}" ]; then
         has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
         if [ "${has_crop}" = "True" ]; then
@@ -675,6 +692,14 @@ function buildMogrifyCropOptions {
 
     # 2. Do calculations
     if [ "${has_crop}" = "True" ]; then
+
+        # Grab original image dimensions
+        local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+        local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+
+        local shaving_mogrify_options="$(buildMogrifyShaveOptions ${input_file})"
+        crop_options+=" ${shaving_mogrify_options}"
+
 
         # Fetch percentage
         local CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
