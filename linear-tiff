@@ -113,7 +113,7 @@ declare -i DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-declare -i DCRAW_COLORSPACE_VALUE=1
+declare -i DCRAW_COLORSPACE_VALUE=4
 
 
 # Dcraw's image flipping
@@ -724,48 +724,112 @@ function buildMogrifyCropOptions {
 }
 
 
+# ======================================
+#  buildMogrifyProfileOptions
+#    Usage: buildMogrifyProfileOptions [colorspace]
+#
+#    colorspace: 1|gray When image shall be grayscaled
+# ======================================
+function buildMogrifyProfileOptions {
+
+    # Requirements
+    local colorspace="${1:-0}"; shift;
+    local icc_profile_path
+
+    case "${colorspace}" in
+    gray|1)
+      #  Desaturate colors, if required,
+      #  using a inear Gamma 1.0 Gray profile
+      icc_profile_path=$(color-profiles gray-linear )
+      ;;
+
+    *)
+      # Default ICC profile for color value.
+      # Should match DRAW_COLORSPACE_VALUE.
+      #
+      # Seems this is not needed as dcraw output image comes with profile
+      # icc_profile_path=$(color-profiles srgb-linear )
+      ;;
+    esac
+
+    echo "-profile ${icc_profile_path}"
+}
+
+
+# ======================================
+#  buildMogrifyFlipFlopOptions
+#    Usage: buildMogrifyFlipFlopOptions [option]
+# ======================================
+function buildMogrifyFlipFlopOptions {
+
+    # Requirements
+    local flipflop_positive="${1:-}"; shift;
+    local result
+
+    case "${flipflop_positive}" in
+        flipflop)
+            result="-flip -flop"
+            ;;
+        flip)
+            result="-flip"
+            ;;
+        flop)
+            result="-flop"
+            ;;
+        *)
+            result=""
+            ;;
+    esac
+
+    echo "${result}"
+}
+
+
+# ======================================
+#  buildMogrifyResizeOptions
+#    Usage: buildMogrifyResizeOptions <size>
+# ======================================
+function buildMogrifyResizeOptions {
+
+    # Requirements
+    local resize_width="${1}"
+    local result
+
+    # Resize image on its larger side
+    if [ $resize_width -gt 0 ]; then
+      result="-resize ${resize_width}x${resize_width}>"
+    fi
+
+    echo "${result}"
+}
+
 
 # ======================================
 #  buildMogrifyOptions
+#
+#  Build the complete mogrify options string
+#  for mangling the dcraw output image
 # ======================================
 function buildMogrifyOptions {
     local mogrify_options=""
 
     # Flip or flop the image, if required.
-    if [ ! -z "${flipflop_positive}" ]; then
-      if [ "${flipflop_positive}" = "flipflop" ]; then
-          mogrify_options+=" -flip -flop"
-      else
-          mogrify_options+=" -${flipflop_positive}"
-      fi
-    fi
-
+    local flipflop_options="$(buildMogrifyFlipFlopOptions ${flipflop_positive} )"
+    mogrify_options+=" ${flipflop_options}"
 
 
     # Resize image on its larger side
-    if [ $resize_width -gt 0 ]; then
-      mogrify_options+=" -resize ${resize_width}x${resize_width}>"
-    fi
+    local resize_options="$(buildMogrifyResizeOptions ${resize_width} )"
+    mogrify_options+=" ${resize_options}"
 
 
-    # Default ICC profile.
-    # See DCRAW_COLORSPACE_VALUE
-    local ICC_PROFILE_PATH=$(color-profiles srgb-linear )
-
-
-    #  Desaturate colors, if required:
-    #  Convert to Grayscale with Gray profile embedded with gamma 1.0
-    #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
-    if [ $desaturate_colors -eq 1 ]; then
-      # Linear Gamma 1.0 Gray profile
-      ICC_PROFILE_PATH=$(color-profiles gray-linear )
-      mogrify_options+=" -modulate 100,0 -colorspace Gray"
-    fi
-    mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
+    # Build "-profile" options
+    local icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
+    mogrify_options+=" ${icc_profile_options}"
 
 
     #  Compress image
-    mogrify_options+=" -compress Zip "
+    mogrify_options+=" -compress Zip"
 
     echo "${mogrify_options}"
 }
