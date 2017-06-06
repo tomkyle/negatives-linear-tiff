@@ -804,6 +804,9 @@ function buildMogrifyResizeOptions {
 
 # ======================================
 #  buildMogrifyOptions
+#
+#  Build the complete mogrify options string
+#  for mangling the dcraw output image
 # ======================================
 function buildMogrifyOptions {
     local mogrify_options=""
