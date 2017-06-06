@@ -804,7 +804,7 @@ function buildMogrifyOptions {
 
 
     # Build "-profile" options
-    local icc_profile_options="$(buildMogrifyProfileOptions $desaturate_colors )"
+    local icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
     mogrify_options+=" ${icc_profile_options}"
 
 
