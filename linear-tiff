@@ -756,19 +756,45 @@ function buildMogrifyProfileOptions {
 
 
 # ======================================
+#  buildMogrifyFlipFlopOptions
+#    Usage: buildMogrifyFlipFlopOptions [option]
+# ======================================
+function buildMogrifyFlipFlopOptions {
+
+    # Requirements
+    flipflop_positive="${1:-}"; shift;
+
+    local result
+
+    case "${flipflop_positive}" in
+        flipflop)
+            result="-flip -flop"
+            ;;
+        flip)
+            result="-flip"
+            ;;
+        flop)
+            result="-flop"
+            ;;
+        *)
+            result=""
+            ;;
+    esac
+
+    echo "${result}"
+}
+
+
+
+# ======================================
 #  buildMogrifyOptions
 # ======================================
 function buildMogrifyOptions {
     local mogrify_options=""
 
     # Flip or flop the image, if required.
-    if [ ! -z "${flipflop_positive}" ]; then
-      if [ "${flipflop_positive}" = "flipflop" ]; then
-          mogrify_options+=" -flip -flop"
-      else
-          mogrify_options+=" -${flipflop_positive}"
-      fi
-    fi
+    local flipflop_options="$(buildMogrifyFlipFlopOptions ${flipflop_positive} )"
+    mogrify_options+=" ${flipflop_options}"
 
 
 
