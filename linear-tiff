@@ -797,7 +797,6 @@ function buildMogrifyOptions {
     mogrify_options+=" ${flipflop_options}"
 
 
-
     # Resize image on its larger side
     if [ $resize_width -gt 0 ]; then
       mogrify_options+=" -resize ${resize_width}x${resize_width}>"
