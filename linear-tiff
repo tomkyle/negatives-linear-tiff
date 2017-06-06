@@ -636,8 +636,9 @@ function buildMogrifyShaveOptions {
     local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
 
     local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
-    local thumbnail_width
-    local thumbnail_height
+
+    local thumbnail_width=0
+    local thumbnail_height=0
 
     # Prepare results
     local shave_options=""
@@ -734,7 +735,7 @@ function buildMogrifyProfileOptions {
 
     # Requirements
     local colorspace="${1:-0}"; shift;
-    local icc_profile_path
+    local icc_profile_path=""
 
     case "${colorspace}" in
     gray|1)
@@ -752,7 +753,9 @@ function buildMogrifyProfileOptions {
       ;;
     esac
 
-    echo "-profile ${icc_profile_path}"
+    if [ -n "${icc_profile_path}" ]; then
+        echo "-profile ${icc_profile_path}"
+    fi
 }
 
 
@@ -764,7 +767,7 @@ function buildMogrifyFlipFlopOptions {
 
     # Requirements
     local flipflop_positive="${1:-}"; shift;
-    local result
+    local result=""
 
     case "${flipflop_positive}" in
         flipflop)
@@ -781,7 +784,9 @@ function buildMogrifyFlipFlopOptions {
             ;;
     esac
 
-    echo "${result}"
+    if [ -n "${result}" ]; then
+        echo "${result}"
+    fi
 }
 
 
@@ -793,14 +798,16 @@ function buildMogrifyResizeOptions {
 
     # Requirements
     local resize_width="${1}"
-    local result
+    local result=""
 
     # Resize image on its larger side
     if [ $resize_width -gt 0 ]; then
       result="-resize ${resize_width}x${resize_width}>"
     fi
 
-    echo "${result}"
+    if [ -n "${result}" ]; then
+        echo "${result}"
+    fi
 }
 
 
