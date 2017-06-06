@@ -113,7 +113,7 @@ declare -i DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-declare -i DCRAW_COLORSPACE_VALUE=1
+declare -i DCRAW_COLORSPACE_VALUE=4
 
 
 # Dcraw's image flipping
@@ -746,7 +746,9 @@ function buildMogrifyProfileOptions {
     *)
       # Default ICC profile for color value.
       # Should match DRAW_COLORSPACE_VALUE.
-      icc_profile_path=$(color-profiles srgb-linear )
+      #
+      # Seems this is not needed as dcraw output image comes with profile
+      # icc_profile_path=$(color-profiles srgb-linear )
       ;;
     esac
 
