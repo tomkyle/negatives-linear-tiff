@@ -829,7 +829,7 @@ function buildMogrifyOptions {
 
 
     #  Compress image
-    mogrify_options+=" -compress Zip "
+    mogrify_options+=" -compress Zip"
 
     echo "${mogrify_options}"
 }
