@@ -785,6 +785,24 @@ function buildMogrifyFlipFlopOptions {
 }
 
 
+# ======================================
+#  buildMogrifyResizeOptions
+#    Usage: buildMogrifyResizeOptions <size>
+# ======================================
+function buildMogrifyResizeOptions {
+
+    # Requirements
+    local resize_width="${1}"
+    local result
+
+    # Resize image on its larger side
+    if [ $resize_width -gt 0 ]; then
+      result="-resize ${resize_width}x${resize_width}>"
+    fi
+
+    echo "${result}"
+}
+
 
 # ======================================
 #  buildMogrifyOptions
@@ -798,9 +816,8 @@ function buildMogrifyOptions {
 
 
     # Resize image on its larger side
-    if [ $resize_width -gt 0 ]; then
-      mogrify_options+=" -resize ${resize_width}x${resize_width}>"
-    fi
+    local resize_options="$(buildMogrifyResizeOptions ${resize_width} )"
+    mogrify_options+=" ${resize_options}"
 
 
     # Build "-profile" options
