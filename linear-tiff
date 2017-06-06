@@ -733,8 +733,7 @@ function buildMogrifyCropOptions {
 function buildMogrifyProfileOptions {
 
     # Requirements
-    colorspace="${1:-0}"; shift;
-
+    local colorspace="${1:-0}"; shift;
     local icc_profile_path
 
     case "${colorspace}" in
@@ -762,8 +761,7 @@ function buildMogrifyProfileOptions {
 function buildMogrifyFlipFlopOptions {
 
     # Requirements
-    flipflop_positive="${1:-}"; shift;
-
+    local flipflop_positive="${1:-}"; shift;
     local result
 
     case "${flipflop_positive}" in
