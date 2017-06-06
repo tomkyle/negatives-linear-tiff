@@ -725,6 +725,7 @@ function buildMogrifyCropOptions {
 
 
 
+
 # ======================================
 #  buildMogrifyOptions
 # ======================================
@@ -759,7 +760,6 @@ function buildMogrifyOptions {
     if [ $desaturate_colors -eq 1 ]; then
       # Linear Gamma 1.0 Gray profile
       ICC_PROFILE_PATH=$(color-profiles gray-linear )
-      mogrify_options+=" -modulate 100,0 -colorspace Gray"
     fi
     mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
 
