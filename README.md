@@ -152,6 +152,8 @@ These features go into the current major version 1:
 
 To see the full list, head over to the [issues page.](https://github.com/tomkyle/negatives-linear-tiff/issues)
 
+**Cropping the putput image fails on Canon CR2 files**: The output cropping is in fact a “shaving”, when sensor size is different than image size displayed in the Raw Converter. The function that builds the “shaving” parameter unluckily relies on meta data that obviously only Nikon NEF is using. Bad programming, sorry for that. See [issue#14](https://github.com/tomkyle/negatives-linear-tiff/issues/14) for what's going on.
+
 **linear-tiff does not find my Raw photos in batch mode.**  
 Currently, *linear-tiff* uses a regex to locate RAW files by these extensions: NEF (Nikon), CR2 (Canon), and RAW (Contax, Kodak, Leica, Panasonic). Leave a comment on [issue#2](https://github.com/tomkyle/negatives-linear-tiff/issues/2) to “order” your favourite file extension. I'll happily lengthen the regex to your needs :smiley:
 
