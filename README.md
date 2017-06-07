@@ -128,7 +128,7 @@ $ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstac
 - **Star rating filter:** Photo managers like Adobe Camrea Raw let their users reject bad images or rate better ones with ‘stars’. This release introduces a new CLI option `--rating` that requires a minimum star rating. 
 
 ### v1.1.2
-- **Star rating filter:** The output file is now cropped when the input file's meta data have crop information stored, even in an XMP sidecar file. 
+- **Crop output file:** The output file is now cropped when the input file's meta data have crop information stored, even in an XMP sidecar file. 
     - Currently, crops with angles other than 0 are not supported. The reason, I simply did not experiment with it. Has someone experience on this? [issue#8](https://github.com/tomkyle/negatives-linear-tiff/issues/8)
     - And there are issues with cropping raw files that are not Nikon NEF. Cropping works in generally, but the resulting pixel size still differs from from the expected values in your Raw converter by a few pixels. Workaround: use *resize* option. [issue#8](https://github.com/tomkyle/negatives-linear-tiff/issues/14)
 
