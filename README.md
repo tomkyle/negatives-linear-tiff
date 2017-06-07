@@ -64,6 +64,10 @@ Display help text
 #### -o, --output *path*  
 Output directory — default is current working directory. Example: `-o results`
 
+#### --rating *stars*
+Omit images that do not reach this star rating threshold. At least in Adobe Camera Raw, rejected images have `-1` stars. To omit these (i.e. process only non-rejected files), pass *rating* parameter like so: `--rating 0`. To process only starred images, set to `--rating 1`
+
+
 #### -r, --resize *pixel*
 Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
 
@@ -120,6 +124,14 @@ $ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstac
 # Changelog
 
 ## New Features
+###v1.1.4
+- **Star rating filter:** Photo managers like Adobe Camrea Raw let their users reject bad images or rate better ones with ‘stars’. This release introduces a new CLI option `--rating` that requires a minimum star rating. 
+
+###v1.1.2
+- **Star rating filter:** The output file is now cropped when the input file's meta data have crop information stored, even in an XMP sidecar file. 
+    - Currently, crops with angles other than 0 are not supported. The reason, I simply did not experiment with it. Has someone experience on this? [issue#8](https://github.com/tomkyle/negatives-linear-tiff/issues/8)
+    - And there are issues with cropping raw files that are not Nikon NEF. Cropping works in generally, but the resulting pixel size still differs from from the expected values in your Raw converter by a few pixels. Workaround: use *resize* option. [issue#8](https://github.com/tomkyle/negatives-linear-tiff/issues/14)
+
 
 ### v1.1.0
 - **Long option names** for those preferring self-explanatory options like `--resize`, `--desaturate` and so on.
@@ -131,7 +143,6 @@ $ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstac
 
 These features go into the current major version 1:
 
-- **Star rating filter:** Many photo managers like Lightroom or Bridge let their users reject bad images or rate better ones with ‘stars’. *linear-tiff* should get a new CLI option flag to set a minimum rating level. Discuss in [issue #6.](https://github.com/tomkyle/negatives-linear-tiff/issues/6)
 
 - **Custom configuration files:** Would it not be fine if users could store their favourite options in a configuration file? `~/.negativesrc` or ` ~/linear-tiff.conf` or even an *INI, YAML* or *JSON?* Head over to [issue #7.](https://github.com/tomkyle/negatives-linear-tiff/issues/7)
 
@@ -151,6 +162,8 @@ These features go into the current major version 1:
 # Issues and FAQ
 
 To see the full list, head over to the [issues page.](https://github.com/tomkyle/negatives-linear-tiff/issues)
+
+**Cropping the putput image fails on Canon CR2 files**: The output cropping is in fact a “shaving”, when sensor size is different than image size displayed in the Raw Converter. The function that builds the “shaving” parameter unluckily relies on meta data that obviously only Nikon NEF is using. Bad programming, sorry for that. See [issue#14](https://github.com/tomkyle/negatives-linear-tiff/issues/14) for what's going on.
 
 **linear-tiff does not find my Raw photos in batch mode.**  
 Currently, *linear-tiff* uses a regex to locate RAW files by these extensions: NEF (Nikon), CR2 (Canon), and RAW (Contax, Kodak, Leica, Panasonic). Leave a comment on [issue#2](https://github.com/tomkyle/negatives-linear-tiff/issues/2) to “order” your favourite file extension. I'll happily lengthen the regex to your needs :smiley:

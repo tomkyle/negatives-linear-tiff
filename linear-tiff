@@ -113,7 +113,7 @@ declare -i DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-declare -i DCRAW_COLORSPACE_VALUE=1
+declare -i DCRAW_COLORSPACE_VALUE=4
 
 
 # Dcraw's image flipping
@@ -178,6 +178,15 @@ declare output_directory=""
 # Crop method. No crop if left empty.
 declare -i crop_output=0
 
+# Star Rating threshold:
+# ignore any input file which rating lesser than this value.
+# Default value here is -1 (all files will be processed).
+#
+# * Rating typically goes from 0 to 5 'stars'
+# * Rejected images should have have -1 (really? to be approved).
+#
+# To omit rejected images, call script with "--rating 0"
+declare -i rating_threshold=-1
 
 # --------------------------------------
 # Miscellaneous
@@ -423,6 +432,7 @@ function convertRawPhotos {
     # Homebrew dependencies
     require dcraw
     require mogrify
+    require exiftool
     require color-profiles
 
     # System commands
@@ -477,14 +487,6 @@ function convertRawPhotos {
             continue;
         fi
 
-        # ---------------------------------------
-        # Show some image info
-        # ---------------------------------------
-        e_info "$(dcraw -i "${RAW_PHOTO}")"
-        if [ $verbous_mode -gt 0 ]; then
-          e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
-          echo;
-        fi
 
         # ---------------------------------------
         # Filename magic
@@ -496,6 +498,32 @@ function convertRawPhotos {
         # Build output filename as dcraw would do
         local output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
         local xmp_sidecar_file="${input_file_basename}.xmp"
+
+
+        # ---------------------------------------
+        # Star Rating filter
+        # ---------------------------------------
+        local rating=0
+
+        [ -f "${xmp_sidecar_file}" ] \
+        && rating="$(exiftool -s -s -s -Rating ${xmp_sidecar_file})" \
+        || rating="$(exiftool -s -s -s -Rating ${RAW_PHOTO})"
+
+        if [ $rating -lt $rating_threshold ]; then
+          e_warning "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
+          continue;
+        fi
+
+
+        # ---------------------------------------
+        # Show some image info
+        # ---------------------------------------
+        e_info "$(dcraw -i "${RAW_PHOTO}")"
+        if [ $verbous_mode -gt 0 ]; then
+          e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
+          echo;
+        fi
+
 
 
         # ---------------------------------------
@@ -614,6 +642,54 @@ function buildDcrawOptions {
 }
 
 
+
+
+# ======================================
+#  buildMogrifyShaveOptions
+#
+#  Create Shave parameter to eliminate the difference between
+#  RAW pixel size and the size displayed in Raw converters.
+#  Example: While the NEF file is 6016x4016 pixels,
+# Adobe Camera Raw will display 6000x4000, according to the embedded JPG thumbnail.
+#
+#    Usage: buildMogrifyShaveOptions <input_file>
+# ======================================
+function buildMogrifyShaveOptions {
+    # Requirements
+    require exiftool
+    local input_file="${1}"
+
+    # Grab original image dimensions
+    local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+    local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+
+    local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
+
+    local thumbnail_width=0
+    local thumbnail_height=0
+
+    # Prepare results
+    local shave_options=""
+
+    if [ -n "${has_embedded_jpg}" ]; then
+        local temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+        exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
+        thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
+        thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
+    fi
+    if [ $thumbnail_width -gt 0 -a $thumbnail_height -gt 0 ]; then
+        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
+        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
+
+        # Add Shave information
+        shave_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
+    fi;
+
+    echo "${shave_options}"
+}
+
+
+
 # ======================================
 #  buildMogrifyCropOptions
 #    Usage: buildMogrifyCropOptions <input_file> <xmp_sidecar>
@@ -627,37 +703,6 @@ function buildMogrifyCropOptions {
     # Prepare results
     local crop_options=""
 
-    # Grab original image dimensions
-    local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
-    local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
-
-
-    # -----------------------------------------
-    # Create Shave parameter:
-    # This will eliminate the difference between RAW pixel size and
-    # the size displayed in Raw converters.
-    # Example: While the NEF file is 6016x4016 pixels,
-    # Adobe Camera Raw will display 6000x4000, according to the embedded JPG thumbnail.
-    # -----------------------------------------
-
-    local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
-    local thumbnail_width
-    local thumbnail_height
-
-    if [ -n "${has_embedded_jpg}" ]; then
-        local temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
-        exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
-        thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
-        thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
-    fi
-    if [ $thumbnail_width -gt 0 -a $thumbnail_height -gt 0 ]; then
-        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
-        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
-
-        # Add Shave information
-        crop_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
-    fi;
-
 
     # -----------------------------------------
     # Construct the crop parameters
@@ -666,6 +711,7 @@ function buildMogrifyCropOptions {
     # 1. Check if crop data is in either work_file or XMP sidecar
     local work_file="${input_file}"
     local has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
+
     if [ "${has_crop}" != "True" -a -f "${xmp_file}" ]; then
         has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
         if [ "${has_crop}" = "True" ]; then
@@ -675,6 +721,14 @@ function buildMogrifyCropOptions {
 
     # 2. Do calculations
     if [ "${has_crop}" = "True" ]; then
+
+        # Grab original image dimensions
+        local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+        local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+
+        local shaving_mogrify_options="$(buildMogrifyShaveOptions ${input_file})"
+        crop_options+=" ${shaving_mogrify_options}"
+
 
         # Fetch percentage
         local CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
@@ -699,48 +753,118 @@ function buildMogrifyCropOptions {
 }
 
 
+# ======================================
+#  buildMogrifyProfileOptions
+#    Usage: buildMogrifyProfileOptions [colorspace]
+#
+#    colorspace: 1|gray When image shall be grayscaled
+# ======================================
+function buildMogrifyProfileOptions {
+
+    # Requirements
+    local colorspace="${1:-0}"; shift;
+    local icc_profile_path=""
+
+    case "${colorspace}" in
+    gray|1)
+      #  Desaturate colors, if required,
+      #  using a inear Gamma 1.0 Gray profile
+      icc_profile_path=$(color-profiles gray-linear )
+      ;;
+
+    *)
+      # Default ICC profile for color value.
+      # Should match DRAW_COLORSPACE_VALUE.
+      #
+      # Seems this is not needed as dcraw output image comes with profile
+      # icc_profile_path=$(color-profiles srgb-linear )
+      ;;
+    esac
+
+    if [ -n "${icc_profile_path}" ]; then
+        echo "-profile ${icc_profile_path}"
+    fi
+}
+
+
+# ======================================
+#  buildMogrifyFlipFlopOptions
+#    Usage: buildMogrifyFlipFlopOptions [option]
+# ======================================
+function buildMogrifyFlipFlopOptions {
+
+    # Requirements
+    local flipflop_positive="${1:-}"; shift;
+    local result=""
+
+    case "${flipflop_positive}" in
+        flipflop)
+            result="-flip -flop"
+            ;;
+        flip)
+            result="-flip"
+            ;;
+        flop)
+            result="-flop"
+            ;;
+        *)
+            result=""
+            ;;
+    esac
+
+    if [ -n "${result}" ]; then
+        echo "${result}"
+    fi
+}
+
+
+# ======================================
+#  buildMogrifyResizeOptions
+#    Usage: buildMogrifyResizeOptions <size>
+# ======================================
+function buildMogrifyResizeOptions {
+
+    # Requirements
+    local resize_width="${1}"
+    local result=""
+
+    # Resize image on its larger side
+    if [ $resize_width -gt 0 ]; then
+      result="-resize ${resize_width}x${resize_width}>"
+    fi
+
+    if [ -n "${result}" ]; then
+        echo "${result}"
+    fi
+}
+
 
 # ======================================
 #  buildMogrifyOptions
+#
+#  Build the complete mogrify options string
+#  for mangling the dcraw output image
 # ======================================
 function buildMogrifyOptions {
     local mogrify_options=""
 
     # Flip or flop the image, if required.
-    if [ ! -z "${flipflop_positive}" ]; then
-      if [ "${flipflop_positive}" = "flipflop" ]; then
-          mogrify_options+=" -flip -flop"
-      else
-          mogrify_options+=" -${flipflop_positive}"
-      fi
-    fi
-
+    local flipflop_options="$(buildMogrifyFlipFlopOptions ${flipflop_positive} )"
+    mogrify_options+=" ${flipflop_options}"
 
 
     # Resize image on its larger side
-    if [ $resize_width -gt 0 ]; then
-      mogrify_options+=" -resize ${resize_width}x${resize_width}>"
-    fi
+    local resize_options="$(buildMogrifyResizeOptions ${resize_width} )"
+    mogrify_options+=" ${resize_options}"
 
 
-    # Default ICC profile.
-    # See DCRAW_COLORSPACE_VALUE
-    local ICC_PROFILE_PATH=$(color-profiles srgb-linear )
-
-
-    #  Desaturate colors, if required:
-    #  Convert to Grayscale with Gray profile embedded with gamma 1.0
-    #  See http://www.graphicsmagick.org/GraphicsMagick.html#details-modulate
-    if [ $desaturate_colors -eq 1 ]; then
-      # Linear Gamma 1.0 Gray profile
-      ICC_PROFILE_PATH=$(color-profiles gray-linear )
-      mogrify_options+=" -modulate 100,0 -colorspace Gray"
-    fi
-    mogrify_options+=" -profile ${ICC_PROFILE_PATH}"
+    # Build "-profile" options
+    local icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
+    mogrify_options+=" ${icc_profile_options}"
 
 
     #  Compress image
-    mogrify_options+=" -compress Zip "
+    mogrify_options+=" -compress Zip"
 
     echo "${mogrify_options}"
 }
@@ -890,6 +1014,12 @@ function main {
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
                 recursion_arguments+=" ${__option} \"${__maybe_param}\""
+                shift
+                ;;
+            --rating)
+                _require_argument "${__option}" "${__maybe_param}"
+                rating_threshold=${__maybe_param}
+                recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
             -r|--resize)
