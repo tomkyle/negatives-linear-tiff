@@ -178,6 +178,15 @@ declare output_directory=""
 # Crop method. No crop if left empty.
 declare -i crop_output=0
 
+# Star Rating threshold:
+# ignore any input file which rating lesser than this value.
+# Default value here is -1 (all files will be processed).
+#
+# * Rating typically goes from 0 to 5 'stars'
+# * Rejected images should have have -1 (really? to be approved).
+#
+# To omit rejected images, call script with "--rating 0"
+declare -i rating_threshold=-1
 
 # --------------------------------------
 # Miscellaneous
@@ -423,6 +432,7 @@ function convertRawPhotos {
     # Homebrew dependencies
     require dcraw
     require mogrify
+    require exiftool
     require color-profiles
 
     # System commands
@@ -477,14 +487,6 @@ function convertRawPhotos {
             continue;
         fi
 
-        # ---------------------------------------
-        # Show some image info
-        # ---------------------------------------
-        e_info "$(dcraw -i "${RAW_PHOTO}")"
-        if [ $verbous_mode -gt 0 ]; then
-          e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
-          echo;
-        fi
 
         # ---------------------------------------
         # Filename magic
@@ -496,6 +498,32 @@ function convertRawPhotos {
         # Build output filename as dcraw would do
         local output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
         local xmp_sidecar_file="${input_file_basename}.xmp"
+
+
+        # ---------------------------------------
+        # Star Rating filter
+        # ---------------------------------------
+        local rating=0
+
+        [ -f "${xmp_sidecar_file}" ] \
+        && rating="$(exiftool -s -s -s -Rating ${xmp_sidecar_file})" \
+        || rating="$(exiftool -s -s -s -Rating ${RAW_PHOTO})"
+
+        if [ $rating -lt $rating_threshold ]; then
+          e_warning "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
+          continue;
+        fi
+
+
+        # ---------------------------------------
+        # Show some image info
+        # ---------------------------------------
+        e_info "$(dcraw -i "${RAW_PHOTO}")"
+        if [ $verbous_mode -gt 0 ]; then
+          e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
+          echo;
+        fi
+
 
 
         # ---------------------------------------
@@ -805,7 +833,7 @@ function buildMogrifyResizeOptions {
       result="-resize ${resize_width}x${resize_width}>"
     fi
 
-    if [ -n "${result}" ]; then
+    if [ -n "${result}" ]; then
         echo "${result}"
     fi
 }
@@ -986,6 +1014,12 @@ function main {
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
                 recursion_arguments+=" ${__option} \"${__maybe_param}\""
+                shift
+                ;;
+            --rating)
+                _require_argument "${__option}" "${__maybe_param}"
+                rating_threshold=${__maybe_param}
+                recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
             -r|--resize)
