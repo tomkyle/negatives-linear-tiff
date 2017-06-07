@@ -124,6 +124,14 @@ $ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstac
 # Changelog
 
 ## New Features
+###v1.1.4
+- **Star rating filter:** Photo managers like Adobe Camrea Raw let their users reject bad images or rate better ones with ‘stars’. This release introduces a new CLI option `--rating` that requires a minimum star rating. 
+
+###v1.1.2
+- **Star rating filter:** The output file is now cropped when the input file's meta data have crop information stored, even in an XMP sidecar file. 
+    - Currently, crops with angles other than 0 are not supported. The reason, I simply did not experiment with it. Has someone experience on this? [issue#8](https://github.com/tomkyle/negatives-linear-tiff/issues/8)
+    - And there are issues with cropping raw files that are not Nikon NEF. Cropping works in generally, but the resulting pixel size still differs from from the expected values in your Raw converter by a few pixels. Workaround: use *resize* option. [issue#8](https://github.com/tomkyle/negatives-linear-tiff/issues/14)
+
 
 ### v1.1.0
 - **Long option names** for those preferring self-explanatory options like `--resize`, `--desaturate` and so on.
@@ -135,7 +143,6 @@ $ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstac
 
 These features go into the current major version 1:
 
-- **Star rating filter:** Many photo managers like Lightroom or Bridge let their users reject bad images or rate better ones with ‘stars’. *linear-tiff* should get a new CLI option flag to set a minimum rating level. Discuss in [issue #6.](https://github.com/tomkyle/negatives-linear-tiff/issues/6)
 
 - **Custom configuration files:** Would it not be fine if users could store their favourite options in a configuration file? `~/.negativesrc` or ` ~/linear-tiff.conf` or even an *INI, YAML* or *JSON?* Head over to [issue #7.](https://github.com/tomkyle/negatives-linear-tiff/issues/7)
 
