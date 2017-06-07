@@ -64,6 +64,10 @@ Display help text
 #### -o, --output *path*  
 Output directory — default is current working directory. Example: `-o results`
 
+#### --rating *stars*
+Omit images that do not reach this star rating threshold. At least in Adobe Camera Raw, rejected images have `-1` stars. To omit these (i.e. process only non-rejected files), pass *rating* parameter like so: `--rating 0`. To process only starred images, set to `--rating 1`
+
+
 #### -r, --resize *pixel*
 Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
 
