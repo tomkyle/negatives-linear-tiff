@@ -113,7 +113,7 @@ declare -i DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-declare -i DCRAW_COLORSPACE_VALUE=4
+declare -i DCRAW_COLORSPACE_VALUE=1
 
 
 # Dcraw's image flipping
