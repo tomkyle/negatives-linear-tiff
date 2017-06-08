@@ -27,7 +27,6 @@ set -o nounset
 set -o pipefail
 # set -o xtrace
 
-
 # Internal Field Separator
 readonly DEFAULT_IFS="${IFS}"
 readonly SAFER_IFS=$'\n\t'
@@ -385,7 +384,7 @@ function runBatchMode {
         printf "Process these %s images:\n" "${number_of_images}"
 
         # When few images to be processed, cat command should be plenty
-        [ $number_of_images -le 6 ] && cat_or_column="cat" || cat_or_column="column"
+        [ "${number_of_images}" -le 6 ] && cat_or_column="cat" || cat_or_column="column"
 
         printf "${C_GRAY}%s\n${NC}" "$(${cat_or_column} "${TODO_TXT}")"
         echo;
@@ -393,7 +392,7 @@ function runBatchMode {
 
     if [ $debug_mode -gt 0 ]; then
       echo "This is what GNU Parallel does:"
-      e_debug $(parallel --dry-run -a "${TODO_TXT}" "$0" "${FUNC_ARGUMENTS[@]}" "{}")
+      e_debug "$(parallel --dry-run -a "${TODO_TXT}" "$0" "${FUNC_ARGUMENTS[@]}" "{}")"
       echo;
       echo;
     fi
@@ -450,7 +449,7 @@ function convertRawPhotos {
     #  Linear TIFF creation:
     #  Build dcraw parameters
     # ---------------------------------------
-    local dcraw_options="$(buildDcrawOptions)"
+    local dcraw_options; dcraw_options="$(buildDcrawOptions)"
     [ $verbous_mode -gt 0 ] \
     && printf "Create linear TIFF with: \n%s\n" "$(e_verbous "dcraw ${dcraw_options}")"
 
@@ -459,7 +458,7 @@ function convertRawPhotos {
     #  How to mangle dcraw's output TIFF:
     #  Build mogrify's options string.
     # ---------------------------------------
-    local mogrify_options="$(buildMogrifyOptions)"
+    local mogrify_options; mogrify_options="$(buildMogrifyOptions)"
     [ $verbous_mode -gt 0 ] \
     && printf "Mangle dcraw output with: \n%s\n" "$(e_verbous "mogrify ${mogrify_options}")"
 
