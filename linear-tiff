@@ -505,10 +505,10 @@ function convertRawPhotos {
         local rating=0
 
         [ -f "${xmp_sidecar_file}" ] \
-        && rating="$(exiftool -s -s -s -Rating ${xmp_sidecar_file})" \
-        || rating="$(exiftool -s -s -s -Rating ${RAW_PHOTO})"
+        && rating="$(exiftool -s -s -s -Rating "${xmp_sidecar_file}")" \
+        || rating="$(exiftool -s -s -s -Rating "${RAW_PHOTO}")"
 
-        if [ $rating -lt $rating_threshold ]; then
+        if [ "${rating}" -lt "${rating_threshold}" ]; then
           e_warning "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
           continue;
         fi
@@ -550,7 +550,7 @@ function convertRawPhotos {
         # Consider individual image crop settings
         # ---------------------------------------
         if [ $crop_output -gt 0 ]; then
-            local cropping_mogrify_options="$(buildMogrifyCropOptions ${RAW_PHOTO} ${xmp_sidecar_file})"
+            local cropping_mogrify_options; cropping_mogrify_options="$(buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}")"
             if [ -n "${cropping_mogrify_options}" ]; then
                 printf "Prepare cropping "
                 e_debug "$(printf "\n%s " "${cropping_mogrify_options}")"
@@ -659,13 +659,13 @@ function buildMogrifyShaveOptions {
     local input_file="${1}"
 
     # Grab original image dimensions
-    local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
-    local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+    local image_width; image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+    local image_height; image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
 
-    local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
+    local has_embedded_jpg; has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
 
-    local thumbnail_width=0
-    local thumbnail_height=0
+    local thumbnail_width; thumbnail_width=0
+    local thumbnail_height; thumbnail_height=0
 
     # Prepare results
     local shave_options=""
