@@ -658,18 +658,22 @@ function buildMogrifyShaveOptions {
     require exiftool
     local input_file="${1}"
 
+    local image_width image_height;
+    local has_embedded_jpg shave_options;
+    local thumbnail_width thumbnail_height;
+
+
     # Grab original image dimensions
-    local image_width; image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
-    local image_height; image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+    image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+    image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
 
-    local has_embedded_jpg; has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
+    has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
 
-    local thumbnail_width; thumbnail_width=0
-    local thumbnail_height; thumbnail_height=0
+    thumbnail_width=0
+    thumbnail_height=0
+
 
     # Prepare results
-    local shave_options=""
-
     if [ -n "${has_embedded_jpg}" ]; then
         local temp_thumbnail
         temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
@@ -678,6 +682,7 @@ function buildMogrifyShaveOptions {
         thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
         thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
     fi
+
     if [ "${thumbnail_width}" -gt 0 ] && [ "${thumbnail_height}" -gt 0 ]; then
         shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
         shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
