@@ -487,22 +487,24 @@ function convertRawPhotos {
         fi
 
 
+        local input_file_basename input_file_extension xmp_sidecar_file output_tiff rating
+
         # ---------------------------------------
         # Filename magic
         # ---------------------------------------
-        local input_file_extension="${RAW_PHOTO##*.}";
-        local input_file_basename="${RAW_PHOTO%.$input_file_extension}"
+        input_file_extension="${RAW_PHOTO##*.}";
+        input_file_basename="${RAW_PHOTO%.$input_file_extension}"
         input_file_basename="${input_file_basename##*/}" # remove trailing slash
 
         # Build output filename as dcraw would do
-        local output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
-        local xmp_sidecar_file="${input_file_basename}.xmp"
+        output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
+        xmp_sidecar_file="${input_file_basename}.xmp"
 
 
         # ---------------------------------------
         # Star Rating filter
         # ---------------------------------------
-        local rating=0
+        rating=0
 
         [ -f "${xmp_sidecar_file}" ] \
         && rating="$(exiftool -s -s -s -Rating "${xmp_sidecar_file}")" \
@@ -550,7 +552,9 @@ function convertRawPhotos {
         # Consider individual image crop settings
         # ---------------------------------------
         if [ $crop_output -gt 0 ]; then
-            local cropping_mogrify_options; cropping_mogrify_options="$(buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}")"
+            local cropping_mogrify_options;
+            cropping_mogrify_options="$(buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}")"
+
             if [ -n "${cropping_mogrify_options}" ]; then
                 printf "Prepare cropping "
                 e_debug "$(printf "\n%s " "${cropping_mogrify_options}")"
@@ -669,8 +673,8 @@ function buildMogrifyShaveOptions {
 
     has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
 
-    thumbnail_width=0
-    thumbnail_height=0
+    thumbnail_width=$image_width
+    thumbnail_height=$image_height
 
 
     # Prepare results
@@ -686,6 +690,15 @@ function buildMogrifyShaveOptions {
     if [ "${thumbnail_width}" -gt 0 ] && [ "${thumbnail_height}" -gt 0 ]; then
         shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
         shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
+
+        # Growing Workaround for Non-NEF images:
+        #
+        ### Canon CR2
+        #
+        ### SensorWidth - SensorRightBorder - 1
+        # shave_horizonzal=12
+        ### SensorHeight - SensorBottomBorder
+        # shave_vertical=11
 
         # Add Shave information
         shave_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
