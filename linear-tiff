@@ -671,12 +671,14 @@ function buildMogrifyShaveOptions {
     local shave_options=""
 
     if [ -n "${has_embedded_jpg}" ]; then
-        local temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+        local temp_thumbnail
+        temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+
         exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
         thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
         thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
     fi
-    if [ $thumbnail_width -gt 0 -a $thumbnail_height -gt 0 ]; then
+    if [ "${thumbnail_width}" -gt 0 ] && [ "${thumbnail_height}" -gt 0 ]; then
         shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
         shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
 
@@ -709,9 +711,9 @@ function buildMogrifyCropOptions {
 
     # 1. Check if crop data is in either work_file or XMP sidecar
     local work_file="${input_file}"
-    local has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
+    local has_crop; has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
 
-    if [ "${has_crop}" != "True" -a -f "${xmp_file}" ]; then
+    if [ "${has_crop}" != "True" ] && [ -f "${xmp_file}" ]; then
         has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
         if [ "${has_crop}" = "True" ]; then
             work_file="${xmp_file}"
@@ -721,27 +723,31 @@ function buildMogrifyCropOptions {
     # 2. Do calculations
     if [ "${has_crop}" = "True" ]; then
 
-        # Grab original image dimensions
-        local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
-        local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+        local image_width image_height;
+        local shaving_mogrify_options;
+        local CropTop CropBottom CropLeft CropRight;
+        local width_perc height_perc offset_horizontal offset_vertical;
 
-        local shaving_mogrify_options="$(buildMogrifyShaveOptions ${input_file})"
+        # Grab original image dimensions
+        image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+        image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+
+        shaving_mogrify_options="$(buildMogrifyShaveOptions "${input_file}")"
         crop_options+=" ${shaving_mogrify_options}"
 
-
         # Fetch percentage
-        local CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
-        local CropBottom="$(exiftool -s -s -s -CropBottom "${work_file}")"
-        local CropLeft="$(exiftool -s -s -s -CropLeft "${work_file}")"
-        local CropRight="$(exiftool -s -s -s -CropRight "${work_file}")"
+        CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
+        CropBottom="$(exiftool -s -s -s -CropBottom "${work_file}")"
+        CropLeft="$(exiftool -s -s -s -CropLeft "${work_file}")"
+        CropRight="$(exiftool -s -s -s -CropRight "${work_file}")"
 
         # Calc remaining width and height, after crop, in percentage.
-        local width_perc=$(echo "($CropRight - $CropLeft) * 100" | bc -l)
-        local height_perc=$(echo "($CropBottom - $CropTop) * 100" | bc -l)
+        width_perc=$(echo "($CropRight - $CropLeft) * 100" | bc -l)
+        height_perc=$(echo "($CropBottom - $CropTop) * 100" | bc -l)
 
         # Calc offsets in pixel
-        local offset_horizontal=$(echo "$image_width * $CropLeft" | bc -l)
-        local offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
+        offset_horizontal=$(echo "$image_width * $CropLeft" | bc -l)
+        offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
 
         # 3. Finally, add crop information
         crop_options+=" -crop ${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}"
@@ -828,7 +834,7 @@ function buildMogrifyResizeOptions {
     local result=""
 
     # Resize image on its larger side
-    if [ $resize_width -gt 0 ]; then
+    if [ "${resize_width}" -gt 0 ]; then
       result="-resize ${resize_width}x${resize_width}>"
     fi
 
@@ -845,20 +851,21 @@ function buildMogrifyResizeOptions {
 #  for mangling the dcraw output image
 # ======================================
 function buildMogrifyOptions {
-    local mogrify_options=""
+
+    local mogrify_options flipflop_options resize_options icc_profile_options;
 
     # Flip or flop the image, if required.
-    local flipflop_options="$(buildMogrifyFlipFlopOptions ${flipflop_positive} )"
+    flipflop_options="$(buildMogrifyFlipFlopOptions "${flipflop_positive}" )"
     mogrify_options+=" ${flipflop_options}"
 
 
     # Resize image on its larger side
-    local resize_options="$(buildMogrifyResizeOptions ${resize_width} )"
+    resize_options="$(buildMogrifyResizeOptions "${resize_width}" )"
     mogrify_options+=" ${resize_options}"
 
 
     # Build "-profile" options
-    local icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
+    icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
     mogrify_options+=" ${icc_profile_options}"
 
 
@@ -957,9 +964,6 @@ function main {
     # Used by runBatchMode when letting GNU Parallel
     # call this very script.
     local recursion_arguments=""
-
-    # Keeps anything that does not look like an option.
-    local image_parameters=""
 
     # Keeps anything that does not look like an option.
     local -a image_parameters_array
