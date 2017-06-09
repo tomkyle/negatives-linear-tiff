@@ -112,7 +112,7 @@ declare -i DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-declare -i DCRAW_COLORSPACE_VALUE=4
+declare -i DCRAW_COLORSPACE_VALUE=1
 
 
 # Dcraw's image flipping
@@ -558,6 +558,7 @@ function convertRawPhotos {
             if [ -n "${cropping_mogrify_options}" ]; then
                 printf "Prepare cropping "
                 e_debug "$(printf "\n%s " "${cropping_mogrify_options}")"
+                # Prepend to existing options string
                 mogrify_options="${cropping_mogrify_options} ${mogrify_options}"
                 e_success ""
             fi
@@ -791,7 +792,7 @@ function buildMogrifyProfileOptions {
     case "${colorspace}" in
     gray|1)
       #  Desaturate colors, if required,
-      #  using a inear Gamma 1.0 Gray profile
+      #  using a linear Gamma 1.0 Gray profile
       icc_profile_path=$(color-profiles gray-linear )
       ;;
 
