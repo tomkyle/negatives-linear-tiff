@@ -115,23 +115,24 @@ declare DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-declare -i DCRAW_COLORSPACE_VALUE=1
+declare -i DCRAW_COLORSPACE_VALUE=4
 
 
 # Dcraw's image flipping
 #
-# Disable with "-t 0"
+# Disable with 0
 # Leave blank to flip automatically.
-declare DCRAW_FLIP_IMAGE="-t 0"
-
+declare DCRAW_FLIP_IMAGE=0
 
 # Dcraw's White balance
 #
-# -w White balance according to camera settings
-#    at the moment of the shot
-declare DCRAW_WHITE_BALANCE="-w"
+# "w" White balance according to camera settings
+#     at the moment of the shot
+declare DCRAW_WHITE_BALANCE="w"
 
 
+
+declare -a DCRAW_OPTIONS_ARR=()
 
 
 
@@ -241,7 +242,7 @@ function e_result () {
 
 function e_verbous () {
   if [ $verbous_mode -gt 0 ]; then
-    printf "${C_GRAY}%s${NC}" "${*}"
+    printf "${C_GRAY}%s${NC}\n" "${*}"
   fi
 }
 
@@ -452,18 +453,23 @@ function convertRawPhotos {
     #  Linear TIFF creation:
     #  Build dcraw parameters
     # ---------------------------------------
-    local dcraw_options; dcraw_options="$(buildDcrawOptions)"
-    [ $verbous_mode -gt 0 ] \
-    && printf "Create linear TIFF with: \n%s\n" "$(e_verbous "dcraw ${dcraw_options}")"
-
+    buildDcrawOptions
+    if [ $verbous_mode -gt 0 ]; then
+      IFS="${DEFAULT_IFS}"
+      echo "Create linear TIFF with:"
+      e_verbous "$(printf "dcraw %s\n" "${DCRAW_OPTIONS_ARR[*]}")"
+      IFS=$"{SAFER_IFS}"
+    fi
 
     # ---------------------------------------
     #  How to mangle dcraw's output TIFF:
     #  Build mogrify's options string.
     # ---------------------------------------
     local mogrify_options; mogrify_options="$(buildMogrifyOptions)"
-    [ $verbous_mode -gt 0 ] \
-    && printf "Mangle dcraw output with: \n%s\n" "$(e_verbous "mogrify ${mogrify_options}")"
+    if [ $verbous_mode -gt 0 ]; then
+      echo "Mangle dcraw output with:"
+      e_verbous "mogrify ${mogrify_options}"
+    fi
 
 
     # ---------------------------------------
@@ -534,9 +540,10 @@ function convertRawPhotos {
         # Call dcraw
         # ---------------------------------------
         printf "Linear TIFF "
-        e_debug "$(printf "\ndcraw %s %s " "${dcraw_options}" "${RAW_PHOTO}")"
+
         IFS="${DEFAULT_IFS}"
-        dcraw ${dcraw_options} "${RAW_PHOTO}" || {
+        e_debug "$(printf "\ndcraw %s %s " "${DCRAW_OPTIONS_ARR[*]}" "${RAW_PHOTO}")"
+        dcraw "${DCRAW_OPTIONS_ARR[@]}" "${RAW_PHOTO}" || {
           e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
           continue
         }
@@ -610,31 +617,31 @@ function convertRawPhotos {
 # ======================================
 function buildDcrawOptions {
 
-    local dcraw_options=""
 
     # Add white balance setting
-    [ ! -z "${DCRAW_WHITE_BALANCE}" ] && dcraw_options+=" ${DCRAW_WHITE_BALANCE}"
+    [ "${DCRAW_WHITE_BALANCE}" = "w" ] && DCRAW_OPTIONS_ARR+=(-w)
 
     # Add flip image setting
-    [ ! -z "${DCRAW_FLIP_IMAGE}" ] && dcraw_options+=" ${DCRAW_FLIP_IMAGE}"
+    [ -n "${DCRAW_FLIP_IMAGE}" ] && DCRAW_OPTIONS_ARR+=(-t ${DCRAW_FLIP_IMAGE})
 
     # How to handle highlights
-    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
+    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && DCRAW_OPTIONS_ARR+=(-H ${DCRAW_HIGHLIGHTS_VALUE})
 
     # Add demosaicing algorithm number
-    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
+    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && DCRAW_OPTIONS_ARR+=(-q ${DCRAW_BAYER_DEMOSAIC_VALUE})
 
     # Colorspace
-    dcraw_options+=" -o ${DCRAW_COLORSPACE_VALUE}"
+    DCRAW_OPTIONS_ARR+=(-o ${DCRAW_COLORSPACE_VALUE})
 
     # -4: 16 bit linearity, same as "-6 -W -g 1 1".
     # -T: Output TIFF instead of PPM
-    dcraw_options+=" -4 -T"
+    DCRAW_OPTIONS_ARR+=(-4)
+    DCRAW_OPTIONS_ARR+=(-T)
 
     ### This is tooo noisy....
     # [ "${verbous_mode}" -gt 0 ] && dcraw_options="-v ${dcraw_options}"
 
-    echo "${dcraw_options}"
+    #echo "${dcraw_options}"
 
 }
 
@@ -665,24 +672,25 @@ function buildMogrifyShaveOptions {
     # Grab original image dimensions
     image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
     image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
-    thumbnail_width=$image_width
-    thumbnail_height=$image_height
-
-    # Try to calculate thumbnail with from embedded JPG
-    has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
-    if [ -n "${has_embedded_jpg}" ]; then
-        local temp_thumbnail
-        temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
-
-        exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
-        thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
-        thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
-    fi;
 
     # Calculate shaving
     filetype="$(exiftool -s -s -s -FileType "${input_file}")"
     case "${filetype}" in
     NEF)
+        thumbnail_width=$image_width
+        thumbnail_height=$image_height
+
+        # Try to calculate thumbnail with from embedded JPG
+        has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
+        if [ -n "${has_embedded_jpg}" ]; then
+            local temp_thumbnail
+            temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+
+            exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
+            thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
+            thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
+        fi;
+
         shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
         shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
         ;;
