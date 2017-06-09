@@ -27,7 +27,6 @@ set -o nounset
 set -o pipefail
 # set -o xtrace
 
-
 # Internal Field Separator
 readonly DEFAULT_IFS="${IFS}"
 readonly SAFER_IFS=$'\n\t'
@@ -385,7 +384,7 @@ function runBatchMode {
         printf "Process these %s images:\n" "${number_of_images}"
 
         # When few images to be processed, cat command should be plenty
-        [ $number_of_images -le 6 ] && cat_or_column="cat" || cat_or_column="column"
+        [ "${number_of_images}" -le 6 ] && cat_or_column="cat" || cat_or_column="column"
 
         printf "${C_GRAY}%s\n${NC}" "$(${cat_or_column} "${TODO_TXT}")"
         echo;
@@ -393,7 +392,7 @@ function runBatchMode {
 
     if [ $debug_mode -gt 0 ]; then
       echo "This is what GNU Parallel does:"
-      e_debug $(parallel --dry-run -a "${TODO_TXT}" "$0" "${FUNC_ARGUMENTS[@]}" "{}")
+      e_debug "$(parallel --dry-run -a "${TODO_TXT}" "$0" "${FUNC_ARGUMENTS[@]}" "{}")"
       echo;
       echo;
     fi
@@ -450,7 +449,7 @@ function convertRawPhotos {
     #  Linear TIFF creation:
     #  Build dcraw parameters
     # ---------------------------------------
-    local dcraw_options="$(buildDcrawOptions)"
+    local dcraw_options; dcraw_options="$(buildDcrawOptions)"
     [ $verbous_mode -gt 0 ] \
     && printf "Create linear TIFF with: \n%s\n" "$(e_verbous "dcraw ${dcraw_options}")"
 
@@ -459,7 +458,7 @@ function convertRawPhotos {
     #  How to mangle dcraw's output TIFF:
     #  Build mogrify's options string.
     # ---------------------------------------
-    local mogrify_options="$(buildMogrifyOptions)"
+    local mogrify_options; mogrify_options="$(buildMogrifyOptions)"
     [ $verbous_mode -gt 0 ] \
     && printf "Mangle dcraw output with: \n%s\n" "$(e_verbous "mogrify ${mogrify_options}")"
 
@@ -488,28 +487,30 @@ function convertRawPhotos {
         fi
 
 
+        local input_file_basename input_file_extension xmp_sidecar_file output_tiff rating
+
         # ---------------------------------------
         # Filename magic
         # ---------------------------------------
-        local input_file_extension="${RAW_PHOTO##*.}";
-        local input_file_basename="${RAW_PHOTO%.$input_file_extension}"
+        input_file_extension="${RAW_PHOTO##*.}";
+        input_file_basename="${RAW_PHOTO%.$input_file_extension}"
         input_file_basename="${input_file_basename##*/}" # remove trailing slash
 
         # Build output filename as dcraw would do
-        local output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
-        local xmp_sidecar_file="${input_file_basename}.xmp"
+        output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
+        xmp_sidecar_file="${input_file_basename}.xmp"
 
 
         # ---------------------------------------
         # Star Rating filter
         # ---------------------------------------
-        local rating=0
+        rating=0
 
         [ -f "${xmp_sidecar_file}" ] \
-        && rating="$(exiftool -s -s -s -Rating ${xmp_sidecar_file})" \
-        || rating="$(exiftool -s -s -s -Rating ${RAW_PHOTO})"
+        && rating="$(exiftool -s -s -s -Rating "${xmp_sidecar_file}")" \
+        || rating="$(exiftool -s -s -s -Rating "${RAW_PHOTO}")"
 
-        if [ $rating -lt $rating_threshold ]; then
+        if [ "${rating}" -lt "${rating_threshold}" ]; then
           e_warning "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
           continue;
         fi
@@ -551,10 +552,13 @@ function convertRawPhotos {
         # Consider individual image crop settings
         # ---------------------------------------
         if [ $crop_output -gt 0 ]; then
-            local cropping_mogrify_options="$(buildMogrifyCropOptions ${RAW_PHOTO} ${xmp_sidecar_file})"
+            local cropping_mogrify_options;
+            cropping_mogrify_options="$(buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}")"
+
             if [ -n "${cropping_mogrify_options}" ]; then
                 printf "Prepare cropping "
                 e_debug "$(printf "\n%s " "${cropping_mogrify_options}")"
+                # Prepend to existing options string
                 mogrify_options="${cropping_mogrify_options} ${mogrify_options}"
                 e_success ""
             fi
@@ -659,27 +663,43 @@ function buildMogrifyShaveOptions {
     require exiftool
     local input_file="${1}"
 
+    local image_width image_height;
+    local has_embedded_jpg shave_options;
+    local thumbnail_width thumbnail_height;
+
+
     # Grab original image dimensions
-    local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
-    local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+    image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+    image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
 
-    local has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
+    has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
 
-    local thumbnail_width=0
-    local thumbnail_height=0
+    thumbnail_width=$image_width
+    thumbnail_height=$image_height
+
 
     # Prepare results
-    local shave_options=""
-
     if [ -n "${has_embedded_jpg}" ]; then
-        local temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+        local temp_thumbnail
+        temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+
         exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
         thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
         thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
     fi
-    if [ $thumbnail_width -gt 0 -a $thumbnail_height -gt 0 ]; then
+
+    if [ "${thumbnail_width}" -gt 0 ] && [ "${thumbnail_height}" -gt 0 ]; then
         shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
         shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
+
+        # Growing Workaround for Non-NEF images:
+        #
+        ### Canon CR2
+        #
+        ### SensorWidth - SensorRightBorder - 1
+        # shave_horizonzal=12
+        ### SensorHeight - SensorBottomBorder
+        # shave_vertical=11
 
         # Add Shave information
         shave_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
@@ -710,9 +730,9 @@ function buildMogrifyCropOptions {
 
     # 1. Check if crop data is in either work_file or XMP sidecar
     local work_file="${input_file}"
-    local has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
+    local has_crop; has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
 
-    if [ "${has_crop}" != "True" -a -f "${xmp_file}" ]; then
+    if [ "${has_crop}" != "True" ] && [ -f "${xmp_file}" ]; then
         has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
         if [ "${has_crop}" = "True" ]; then
             work_file="${xmp_file}"
@@ -722,27 +742,31 @@ function buildMogrifyCropOptions {
     # 2. Do calculations
     if [ "${has_crop}" = "True" ]; then
 
-        # Grab original image dimensions
-        local image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
-        local image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+        local image_width image_height;
+        local shaving_mogrify_options;
+        local CropTop CropBottom CropLeft CropRight;
+        local width_perc height_perc offset_horizontal offset_vertical;
 
-        local shaving_mogrify_options="$(buildMogrifyShaveOptions ${input_file})"
+        # Grab original image dimensions
+        image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
+        image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+
+        shaving_mogrify_options="$(buildMogrifyShaveOptions "${input_file}")"
         crop_options+=" ${shaving_mogrify_options}"
 
-
         # Fetch percentage
-        local CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
-        local CropBottom="$(exiftool -s -s -s -CropBottom "${work_file}")"
-        local CropLeft="$(exiftool -s -s -s -CropLeft "${work_file}")"
-        local CropRight="$(exiftool -s -s -s -CropRight "${work_file}")"
+        CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
+        CropBottom="$(exiftool -s -s -s -CropBottom "${work_file}")"
+        CropLeft="$(exiftool -s -s -s -CropLeft "${work_file}")"
+        CropRight="$(exiftool -s -s -s -CropRight "${work_file}")"
 
         # Calc remaining width and height, after crop, in percentage.
-        local width_perc=$(echo "($CropRight - $CropLeft) * 100" | bc -l)
-        local height_perc=$(echo "($CropBottom - $CropTop) * 100" | bc -l)
+        width_perc=$(echo "($CropRight - $CropLeft) * 100" | bc -l)
+        height_perc=$(echo "($CropBottom - $CropTop) * 100" | bc -l)
 
         # Calc offsets in pixel
-        local offset_horizontal=$(echo "$image_width * $CropLeft" | bc -l)
-        local offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
+        offset_horizontal=$(echo "$image_width * $CropLeft" | bc -l)
+        offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
 
         # 3. Finally, add crop information
         crop_options+=" -crop ${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}"
@@ -768,7 +792,7 @@ function buildMogrifyProfileOptions {
     case "${colorspace}" in
     gray|1)
       #  Desaturate colors, if required,
-      #  using a inear Gamma 1.0 Gray profile
+      #  using a linear Gamma 1.0 Gray profile
       icc_profile_path=$(color-profiles gray-linear )
       ;;
 
@@ -798,13 +822,13 @@ function buildMogrifyFlipFlopOptions {
     local result=""
 
     case "${flipflop_positive}" in
-        flipflop)
+        flipflop|vh|both)
             result="-flip -flop"
             ;;
-        flip)
+        flip|v|vertical)
             result="-flip"
             ;;
-        flop)
+        flop|h|horizontal)
             result="-flop"
             ;;
         *)
@@ -829,7 +853,7 @@ function buildMogrifyResizeOptions {
     local result=""
 
     # Resize image on its larger side
-    if [ $resize_width -gt 0 ]; then
+    if [ "${resize_width}" -gt 0 ]; then
       result="-resize ${resize_width}x${resize_width}>"
     fi
 
@@ -846,20 +870,21 @@ function buildMogrifyResizeOptions {
 #  for mangling the dcraw output image
 # ======================================
 function buildMogrifyOptions {
-    local mogrify_options=""
+
+    local mogrify_options flipflop_options resize_options icc_profile_options;
 
     # Flip or flop the image, if required.
-    local flipflop_options="$(buildMogrifyFlipFlopOptions ${flipflop_positive} )"
+    flipflop_options="$(buildMogrifyFlipFlopOptions "${flipflop_positive}" )"
     mogrify_options+=" ${flipflop_options}"
 
 
     # Resize image on its larger side
-    local resize_options="$(buildMogrifyResizeOptions ${resize_width} )"
+    resize_options="$(buildMogrifyResizeOptions "${resize_width}" )"
     mogrify_options+=" ${resize_options}"
 
 
     # Build "-profile" options
-    local icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
+    icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
     mogrify_options+=" ${icc_profile_options}"
 
 
@@ -960,9 +985,6 @@ function main {
     local recursion_arguments=""
 
     # Keeps anything that does not look like an option.
-    local image_parameters=""
-
-    # Keeps anything that does not look like an option.
     local -a image_parameters_array
 
     # getopts and getopts have inconsistent behavior, so using a simple home-brewed
@@ -1004,12 +1026,14 @@ function main {
                 verbous_mode=1
                 recursion_arguments+=" ${__option}"
                 ;;
-            -f|--flipflop)
+
+            -f|-m|--flipflop|--mirror)
                 _require_argument "${__option}" "${__maybe_param}"
                 flipflop_positive="${__maybe_param}"
                 recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
+
             -o|--output)
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
@@ -1022,7 +1046,7 @@ function main {
                 recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
-            -r|--resize)
+            -r|-w|--resize|--width)
                 _require_argument "${__option}" "${__maybe_param}"
                 resize_width=${__maybe_param}
                 recursion_arguments+=" ${__option} ${__maybe_param}"

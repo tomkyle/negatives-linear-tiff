@@ -55,8 +55,8 @@ Switch on debugging mode, showing everything that's going on.
 #### -d, --desaturate
 Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
 
-#### -f, --flipflop *value*  
-Mirror the image vertically and/or horizontally. Possible values are `flop` horizontal, `flip` vertical or even `flipflop` (guess what). Example: `-f flop`
+#### -m, --mirror *value*  
+Mirror the image vertically and/or horizontally. Possible values are `horizontal` horizontal, `vertical`  or even `both` (guess what). Short values are `h` and `v`. Examples: `-m horizontal`, `-m v`, `-m both`
 
 #### -h, --help
 Display help text
@@ -68,12 +68,22 @@ Output directory — default is current working directory. Example: `-o results`
 Omit images that do not reach this star rating threshold. At least in Adobe Camera Raw, rejected images have `-1` stars. To omit these (i.e. process only non-rejected files), pass *rating* parameter like so: `--rating 0`. To process only starred images, set to `--rating 1`
 
 
-#### -r, --resize *pixel*
+#### -w, --width *pixel*
 Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
+
+
 
 #### -v, --verbous
 Verbous mode — show some more information under way.
 
+### Deprecated Options
+
+
+#### -f, --flipflop (deprecated)
+Mirror the image vertically and/or horizontally. Possible values are `flop` horizontal, `flip` vertical or even `flipflop` (guess what). Example: `-f flop`. This option will be replaced by *-m, --mirror* as of version 2.
+
+#### -r, --resize *pixel* (deprecated)
+Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`. This option will be replaced by *-w, --width* as of version 2.
 
 
 ## Examples
