@@ -610,19 +610,13 @@ function buildDcrawOptions {
     local dcraw_options=""
 
     # Add white balance setting
-    if [ ! -z "${DCRAW_WHITE_BALANCE}" ]; then
-        dcraw_options+=" ${DCRAW_WHITE_BALANCE}"
-    fi;
+    [ ! -z "${DCRAW_WHITE_BALANCE}" ] && dcraw_options+=" ${DCRAW_WHITE_BALANCE}"
 
     # Add flip image setting
-    if [ ! -z "${DCRAW_FLIP_IMAGE}" ]; then
-        dcraw_options+=" ${DCRAW_FLIP_IMAGE}"
-    fi;
+    [ ! -z "${DCRAW_FLIP_IMAGE}" ] && dcraw_options+=" ${DCRAW_FLIP_IMAGE}"
 
     # How to handle highlights
-    if [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ]; then
-        dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
-    fi;
+    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
 
     # Add demosaicing algorithm number
     dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
