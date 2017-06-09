@@ -665,12 +665,10 @@ function buildMogrifyShaveOptions {
     # Grab original image dimensions
     image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
     image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
-
     thumbnail_width=$image_width
     thumbnail_height=$image_height
 
-
-    # Check if there is an embedded image
+    # Try to calculate thumbnail with from embedded JPG
     has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
     if [ -n "${has_embedded_jpg}" ]; then
         local temp_thumbnail
@@ -679,17 +677,14 @@ function buildMogrifyShaveOptions {
         exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
         thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
         thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
-    fi
+    fi;
 
     # Calculate shaving
     filetype="$(exiftool -s -s -s -FileType "${input_file}")"
     case "${filetype}" in
     NEF)
-        if [ "${thumbnail_width}" -gt 0 ] && [ "${thumbnail_height}" -gt 0 ]; then
-            shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
-            shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
-
-        fi
+        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
+        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
         ;;
     CR2)
         local sensor_width sensor_right_border sensor_height sensor_bottom_border;
@@ -705,9 +700,11 @@ function buildMogrifyShaveOptions {
         ;;
     esac
 
+    # Prepare result
     if [ -n "${shave_horizonzal}" ] && [ -n "${shave_vertical}" ] ; then
         shave_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
     fi;
+
     echo "${shave_options}"
 }
 
