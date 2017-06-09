@@ -563,7 +563,7 @@ function convertRawPhotos {
         # ---------------------------------------
         if [ $crop_output -gt 0 ]; then
             local cropping_mogrify_options;
-            cropping_mogrify_options="$(buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}")"
+            cropping_mogrify_options="$(buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}")"
 
             if [ -n "${cropping_mogrify_options}" ]; then
                 printf "Prepare cropping "
@@ -656,61 +656,54 @@ function buildDcrawOptions {
 #  Example: While the NEF file is 6016x4016 pixels,
 # Adobe Camera Raw will display 6000x4000, according to the embedded JPG thumbnail.
 #
-#    Usage: buildMogrifyShaveOptions <input_file>
+#    Usage: buildMogrifyShaveOptions <input_file> <output_file>
 # ======================================
 function buildMogrifyShaveOptions {
     # Requirements
     require exiftool
     local input_file="${1}"
+    local output_file="${2}"
 
-    local image_width image_height;
-    local filetype has_embedded_jpg shave_options;
-    local thumbnail_width thumbnail_height;
-    local shave_horizonzal shave_vertical
+    local output_width output_height;
+    local has_embedded_jpg thumbnail_width thumbnail_height;
+    local shave_horizontal shave_vertical
     local shave_options="";
 
-    # Grab original image dimensions
-    image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
-    image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
+    # Grab dcraw's output image dimensions
+    output_width="$(exiftool -s -s -s -ImageWidth "${output_file}")"
+    output_height="$(exiftool -s -s -s -ImageHeight "${output_file}")"
+
+    # Try to calculate thumbnail dimensions from embedded JPG
+    thumbnail_width=$output_width
+    thumbnail_height=$output_height
+    has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw -PreviewImage "${input_file}")"
+    if [ -n "${has_embedded_jpg}" ]; then
+
+        local temp_thumbnail; temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
+        local filetype; filetype="$(exiftool -s -s -s -FileType "${input_file}")"
+
+        case "${filetype}" in
+        NEF)
+          exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
+          ;;
+        CR2)
+          exiftool -b -PreviewImage "${input_file}" > "${temp_thumbnail}"
+          ;;
+        *)
+          ;;
+        esac
+
+        thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
+        thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
+    fi;
 
     # Calculate shaving
-    filetype="$(exiftool -s -s -s -FileType "${input_file}")"
-    case "${filetype}" in
-    NEF)
-        thumbnail_width=$image_width
-        thumbnail_height=$image_height
-
-        # Try to calculate thumbnail with from embedded JPG
-        has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
-        if [ -n "${has_embedded_jpg}" ]; then
-            local temp_thumbnail
-            temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
-
-            exiftool -b -JpgFromRaw "${input_file}" > "${temp_thumbnail}"
-            thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
-            thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
-        fi;
-
-        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
-        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
-        ;;
-    CR2)
-        local sensor_width sensor_right_border sensor_height sensor_bottom_border;
-        sensor_width="$(exiftool -s -s -s -SensorWidth "${input_file}")"
-        sensor_right_border="$(exiftool -s -s -s -SensorRightBorder "${input_file}")"
-        shave_horizonzal=$(echo "(${sensor_width} - ${sensor_right_border})" | bc -l)
-
-        sensor_height="$(exiftool -s -s -s -SensorHeight "${input_file}")"
-        sensor_bottom_border="$(exiftool -s -s -s -SensorBottomBorder "${input_file}")"
-        shave_vertical=$(echo "(${sensor_height} - ${sensor_bottom_border})" | bc -l)
-        ;;
-    *)
-        ;;
-    esac
+    shave_horizontal=$(echo "(${output_width} - ${thumbnail_width}) / 2" | bc -l)
+    shave_vertical=$(echo "(${output_height} - ${thumbnail_height}) / 2" | bc -l)
 
     # Prepare result
-    if [ -n "${shave_horizonzal}" ] && [ -n "${shave_vertical}" ] ; then
-        shave_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
+    if [ -n "${shave_horizontal}" ] && [ -n "${shave_vertical}" ] ; then
+        shave_options+=" -shave ${shave_horizontal}x${shave_vertical}"
     fi;
 
     echo "${shave_options}"
@@ -720,13 +713,14 @@ function buildMogrifyShaveOptions {
 
 # ======================================
 #  buildMogrifyCropOptions
-#    Usage: buildMogrifyCropOptions <input_file> <xmp_sidecar>
+#    Usage: buildMogrifyCropOptions <input_file> <xmp_sidecar> <output_file>
 # ======================================
 function buildMogrifyCropOptions {
 
     # Requirements
     local input_file="${1}"
     local xmp_file="${2}"
+    local output_file="${3}"
 
     # Prepare results
     local crop_options=""
@@ -759,7 +753,7 @@ function buildMogrifyCropOptions {
         image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
         image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
 
-        shaving_mogrify_options="$(buildMogrifyShaveOptions "${input_file}")"
+        shaving_mogrify_options="$(buildMogrifyShaveOptions "${input_file}" "${output_file}")"
         crop_options+=" ${shaving_mogrify_options}"
 
         # Fetch percentage
