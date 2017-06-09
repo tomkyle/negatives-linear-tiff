@@ -822,13 +822,13 @@ function buildMogrifyFlipFlopOptions {
     local result=""
 
     case "${flipflop_positive}" in
-        flipflop)
+        flipflop|vh|both)
             result="-flip -flop"
             ;;
-        flip)
+        flip|v|vertical)
             result="-flip"
             ;;
-        flop)
+        flop|h|horizontal)
             result="-flop"
             ;;
         *)
@@ -1026,12 +1026,14 @@ function main {
                 verbous_mode=1
                 recursion_arguments+=" ${__option}"
                 ;;
-            -f|--flipflop)
+
+            -f|-m|--flipflop|--mirror)
                 _require_argument "${__option}" "${__maybe_param}"
                 flipflop_positive="${__maybe_param}"
                 recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
+
             -o|--output)
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
@@ -1044,7 +1046,7 @@ function main {
                 recursion_arguments+=" ${__option} ${__maybe_param}"
                 shift
                 ;;
-            -r|--resize)
+            -r|-w|--resize|--width)
                 _require_argument "${__option}" "${__maybe_param}"
                 resize_width=${__maybe_param}
                 recursion_arguments+=" ${__option} ${__maybe_param}"
