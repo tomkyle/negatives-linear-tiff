@@ -657,21 +657,21 @@ function buildMogrifyShaveOptions {
     local input_file="${1}"
 
     local image_width image_height;
-    local has_embedded_jpg shave_options;
+    local filetype has_embedded_jpg shave_options;
     local thumbnail_width thumbnail_height;
-
+    local shave_horizonzal shave_vertical
+    local shave_options="";
 
     # Grab original image dimensions
     image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
     image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
 
-    has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
-
     thumbnail_width=$image_width
     thumbnail_height=$image_height
 
 
-    # Prepare results
+    # Check if there is an embedded image
+    has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw "${input_file}")"
     if [ -n "${has_embedded_jpg}" ]; then
         local temp_thumbnail
         temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
@@ -681,23 +681,33 @@ function buildMogrifyShaveOptions {
         thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
     fi
 
-    if [ "${thumbnail_width}" -gt 0 ] && [ "${thumbnail_height}" -gt 0 ]; then
-        shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
-        shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
+    # Calculate shaving
+    filetype="$(exiftool -s -s -s -FileType "${input_file}")"
+    case "${filetype}" in
+    NEF)
+        if [ "${thumbnail_width}" -gt 0 ] && [ "${thumbnail_height}" -gt 0 ]; then
+            shave_horizonzal=$(echo "(${image_width} - ${thumbnail_width}) / 2" | bc -l)
+            shave_vertical=$(echo "(${image_height} - ${thumbnail_height}) / 2" | bc -l)
 
-        # Growing Workaround for Non-NEF images:
-        #
-        ### Canon CR2
-        #
-        ### SensorWidth - SensorRightBorder - 1
-        # shave_horizonzal=12
-        ### SensorHeight - SensorBottomBorder
-        # shave_vertical=11
+        fi
+        ;;
+    CR2)
+        local sensor_width sensor_right_border sensor_height sensor_bottom_border;
+        sensor_width="$(exiftool -s -s -s -SensorWidth "${input_file}")"
+        sensor_right_border="$(exiftool -s -s -s -SensorRightBorder "${input_file}")"
+        shave_horizonzal=$(echo "(${sensor_width} - ${sensor_right_border})" | bc -l)
 
-        # Add Shave information
+        sensor_height="$(exiftool -s -s -s -SensorHeight "${input_file}")"
+        sensor_bottom_border="$(exiftool -s -s -s -SensorBottomBorder "${input_file}")"
+        shave_vertical=$(echo "(${sensor_height} - ${sensor_bottom_border})" | bc -l)
+        ;;
+    *)
+        ;;
+    esac
+
+    if [ -n "${shave_horizonzal}" ] && [ -n "${shave_vertical}" ] ; then
         shave_options+=" -shave ${shave_horizonzal}x${shave_vertical}"
     fi;
-
     echo "${shave_options}"
 }
 
