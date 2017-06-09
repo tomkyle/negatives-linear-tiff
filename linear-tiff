@@ -95,12 +95,15 @@ declare -i DCRAW_HIGHLIGHTS_VALUE=5
 
 # Bayer demosaicing algorithm dcraw should use
 #
-# -q 0  Use high-speed, low-quality bilinear interpolation.
-# -q 1  Variable Number of Gradients (VNG) interpolation.
-# -q 2  Patterned Pixel Grouping (PPG) interpolation.
-# -q 3  Adaptive Homogeneity-Directed (AHD) interpolation.
-# Leave blank when needed.
-declare -i DCRAW_BAYER_DEMOSAIC_VALUE=3
+# Possible values:
+# 0   - dcraw's -q 0; use high-speed, low-quality bilinear interpolation.
+# 1   - dcraw's -q 1;  Variable Number of Gradients (VNG) interpolation.
+# 2   - dcraw's -q 2;  Patterned Pixel Grouping (PPG) interpolation.
+# 3   - dcraw's -q 3;  Adaptive Homogeneity-Directed (AHD) interpolation.
+#
+# Leave blank when not needed.
+# Developer Note: no -i flag here, since variable can not be checked for being null
+declare DCRAW_BAYER_DEMOSAIC_VALUE=3
 
 
 # dcraw's output colorspace
@@ -619,21 +622,17 @@ function buildDcrawOptions {
     [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && dcraw_options+=" -H ${DCRAW_HIGHLIGHTS_VALUE}"
 
     # Add demosaicing algorithm number
-    dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
+    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && dcraw_options+=" -q ${DCRAW_BAYER_DEMOSAIC_VALUE}"
 
     # Colorspace
     dcraw_options+=" -o ${DCRAW_COLORSPACE_VALUE}"
 
-    # 16 bit linearity, same as "-6 -W -g 1 1"
-    dcraw_options+=" -4"
-
-    # TIFF output
-    dcraw_options+=" -T"
+    # -4: 16 bit linearity, same as "-6 -W -g 1 1".
+    # -T: Output TIFF instead of PPM
+    dcraw_options+=" -4 -T"
 
     ### This is tooo noisy....
-    # if [ "${verbous_mode}" -gt 0 ]; then
-    #   dcraw_options="-v ${dcraw_options}"
-    #fi
+    # [ "${verbous_mode}" -gt 0 ] && dcraw_options="-v ${dcraw_options}"
 
     echo "${dcraw_options}"
 
