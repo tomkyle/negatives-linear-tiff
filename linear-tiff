@@ -132,7 +132,7 @@ declare DCRAW_WHITE_BALANCE="w"
 
 
 # Parameters for calling dcraw.
-declare -a DCRAW_OPTIONS_ARR=()
+declare -a dcraw_options_array=()
 
 
 
@@ -457,7 +457,7 @@ function convertRawPhotos {
     if [ $verbous_mode -gt 0 ]; then
       IFS="${DEFAULT_IFS}"
       echo "Create linear TIFF with:"
-      e_verbous "$(printf "dcraw %s\n" "${DCRAW_OPTIONS_ARR[*]}")"
+      e_verbous "$(printf "dcraw %s\n" "${dcraw_options_array[*]}")"
       IFS=$"{SAFER_IFS}"
     fi
 
@@ -542,8 +542,8 @@ function convertRawPhotos {
         printf "Linear TIFF "
 
         IFS="${DEFAULT_IFS}"
-        e_debug "$(printf "\ndcraw %s %s " "${DCRAW_OPTIONS_ARR[*]}" "${RAW_PHOTO}")"
-        dcraw "${DCRAW_OPTIONS_ARR[@]}" "${RAW_PHOTO}" || {
+        e_debug "$(printf "\ndcraw %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
+        dcraw "${dcraw_options_array[@]}" "${RAW_PHOTO}" || {
           e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
           continue
         }
@@ -619,24 +619,24 @@ function buildDcrawOptions {
 
 
     # Add white balance setting
-    [ "${DCRAW_WHITE_BALANCE}" = "w" ] && DCRAW_OPTIONS_ARR+=(-w)
+    [ "${DCRAW_WHITE_BALANCE}" = "w" ] && dcraw_options_array+=(-w)
 
     # Add flip image setting
-    [ -n "${DCRAW_FLIP_IMAGE}" ] && DCRAW_OPTIONS_ARR+=(-t ${DCRAW_FLIP_IMAGE})
+    [ -n "${DCRAW_FLIP_IMAGE}" ] && dcraw_options_array+=(-t ${DCRAW_FLIP_IMAGE})
 
     # How to handle highlights
-    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && DCRAW_OPTIONS_ARR+=(-H ${DCRAW_HIGHLIGHTS_VALUE})
+    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && dcraw_options_array+=(-H ${DCRAW_HIGHLIGHTS_VALUE})
 
     # Add demosaicing algorithm number
-    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && DCRAW_OPTIONS_ARR+=(-q ${DCRAW_BAYER_DEMOSAIC_VALUE})
+    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && dcraw_options_array+=(-q ${DCRAW_BAYER_DEMOSAIC_VALUE})
 
     # Colorspace
-    DCRAW_OPTIONS_ARR+=(-o ${DCRAW_COLORSPACE_VALUE})
+    dcraw_options_array+=(-o ${DCRAW_COLORSPACE_VALUE})
 
     # -4: 16 bit linearity, same as "-6 -W -g 1 1".
     # -T: Output TIFF instead of PPM
-    DCRAW_OPTIONS_ARR+=(-4)
-    DCRAW_OPTIONS_ARR+=(-T)
+    dcraw_options_array+=(-4)
+    dcraw_options_array+=(-T)
 
     ### This is tooo noisy....
     # [ "${verbous_mode}" -gt 0 ] && dcraw_options="-v ${dcraw_options}"
