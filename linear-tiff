@@ -131,7 +131,7 @@ declare DCRAW_FLIP_IMAGE=0
 declare DCRAW_WHITE_BALANCE="w"
 
 
-
+# Parameters for calling dcraw.
 declare -a DCRAW_OPTIONS_ARR=()
 
 
