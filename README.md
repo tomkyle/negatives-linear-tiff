@@ -55,8 +55,8 @@ Switch on debugging mode, showing everything that's going on.
 #### -d, --desaturate
 Desaturate colors — recommended for B/W negatives. dcraw's TIFF output is converted to 16-bit grayscale, with a linear gamma 1.0 ICC profile applied (Gray-elle-V4-g10.icc). Grayscaling saves up to 60% in file size. 
 
-#### -f, --flipflop *value*  
-Mirror the image vertically and/or horizontally. Possible values are `flop` horizontal, `flip` vertical or even `flipflop` (guess what). Example: `-f flop`
+#### -m, --mirror *value*  
+Mirror the image vertically and/or horizontally. Possible values are `horizontal` horizontal, `vertical`  or even `both` (guess what). Short values are `h` and `v`. Examples: `-m horizontal`, `-m v`, `-m both`
 
 #### -h, --help
 Display help text
@@ -68,12 +68,22 @@ Output directory — default is current working directory. Example: `-o results`
 Omit images that do not reach this star rating threshold. At least in Adobe Camera Raw, rejected images have `-1` stars. To omit these (i.e. process only non-rejected files), pass *rating* parameter like so: `--rating 0`. To process only starred images, set to `--rating 1`
 
 
-#### -r, --resize *pixel*
+#### -w, --width *pixel*
 Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`
+
+
 
 #### -v, --verbous
 Verbous mode — show some more information under way.
 
+### Deprecated Options
+
+
+#### -f, --flipflop (deprecated)
+Mirror the image vertically and/or horizontally. Possible values are `flop` horizontal, `flip` vertical or even `flipflop` (guess what). Example: `-f flop`. This option will be replaced by *-m, --mirror* as of version 2.
+
+#### -r, --resize *pixel* (deprecated)
+Resize  image — pixel width for larger side, preserving aspect ratio. Example: `-r 3000`. This option will be replaced by *-w, --width* as of version 2.
 
 
 ## Examples
@@ -163,7 +173,7 @@ These features go into the current major version 1:
 
 To see the full list, head over to the [issues page.](https://github.com/tomkyle/negatives-linear-tiff/issues)
 
-**Cropping the putput image fails on Canon CR2 files**: The output cropping is in fact a “shaving”, when sensor size is different than image size displayed in the Raw Converter. The function that builds the “shaving” parameter unluckily relies on meta data that obviously only Nikon NEF is using. Bad programming, sorry for that. See [issue#14](https://github.com/tomkyle/negatives-linear-tiff/issues/14) for what's going on.
+**Cropping the output image**: The output cropping is in fact a “shaving”, when image size displayed in the Raw Converter is different than both the sensor size and draw's output image size. *linear_tiff* creates the shaving information by the pixel dimensions of the embedded JPG thumbnail and dcraw's output file. Currently Nikon NEF and Canon CR2 are supported. See [issue#14](https://github.com/tomkyle/negatives-linear-tiff/issues/14) for what's going on.
 
 **linear-tiff does not find my Raw photos in batch mode.**  
 Currently, *linear-tiff* uses a regex to locate RAW files by these extensions: NEF (Nikon), CR2 (Canon), and RAW (Contax, Kodak, Leica, Panasonic). Leave a comment on [issue#2](https://github.com/tomkyle/negatives-linear-tiff/issues/2) to “order” your favourite file extension. I'll happily lengthen the regex to your needs :smiley:

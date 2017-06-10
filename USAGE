@@ -46,6 +46,14 @@ OPTIONS:
 -o, --output path
               Output directory. Defaults to current working dir.
 
+--rating threshold
+              Ignore images with lesser star rating than this threshold value.
+              Typical values are:
+
+              0    - Ignore rejected files (which have star rating of -1)
+              1    - Process any starred file
+              2..5 - Process images with at least n stars
+
 -r, --resize pixel
               Resize larger side to this pixel length, preserving aspect ratio.
 
