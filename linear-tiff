@@ -133,6 +133,10 @@ declare DCRAW_WHITE_BALANCE="w"
 
 # Parameters for calling dcraw.
 declare -a dcraw_options_array=()
+# Parameters for calling mogrify.
+declare -a mogrify_shave_options_array=()
+declare -a mogrify_crop_options_array=()
+declare -a mogrify_options_array=()
 
 
 
@@ -465,10 +469,12 @@ function convertRawPhotos {
     #  How to mangle dcraw's output TIFF:
     #  Build mogrify's options string.
     # ---------------------------------------
-    local mogrify_options; mogrify_options="$(buildMogrifyOptions)"
+    buildMogrifyOptions
     if [ $verbous_mode -gt 0 ]; then
+      IFS="${DEFAULT_IFS}"
       echo "Mangle dcraw output with:"
-      e_verbous "mogrify ${mogrify_options}"
+      e_verbous "$(printf "mogrify %s\n" "${mogrify_options_array[*]}")"
+      IFS=$"{SAFER_IFS}"
     fi
 
 
@@ -562,16 +568,12 @@ function convertRawPhotos {
         # Consider individual image crop settings
         # ---------------------------------------
         if [ $crop_output -gt 0 ]; then
-            local cropping_mogrify_options;
-            cropping_mogrify_options="$(buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}")"
-
-            if [ -n "${cropping_mogrify_options}" ]; then
-                printf "Prepare cropping "
-                e_debug "$(printf "\n%s " "${cropping_mogrify_options}")"
-                # Prepend to existing options string
-                mogrify_options="${cropping_mogrify_options} ${mogrify_options}"
-                e_success ""
-            fi
+            printf "Prepare cropping "
+            buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}"
+            IFS="${DEFAULT_IFS}"
+            e_debug "$(printf "\n%s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}")"
+            IFS="${SAFER_IFS}"
+            e_success ""
         fi
 
 
@@ -579,11 +581,12 @@ function convertRawPhotos {
         #  Handle output file
         # ---------------------------------------
         printf "Mangle output file "
-        e_debug "$(printf "\nmogrify %s " "${mogrify_options}")"
-
+        IFS="${DEFAULT_IFS}"
+        e_debug "$(printf "\nmogrify %s %s %s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}" "${mogrify_options_array[*]}")"
+        e_success ""
 
         IFS="${DEFAULT_IFS}"
-        (mogrify ${mogrify_options} "${output_tiff}") || {
+        (mogrify "${mogrify_shave_options_array[@]}" "${mogrify_crop_options_array[@]}" "${mogrify_options_array[@]}" "${output_tiff}") || {
             e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
             continue
         }
@@ -667,7 +670,6 @@ function buildMogrifyShaveOptions {
     local output_width output_height;
     local has_embedded_jpg thumbnail_width thumbnail_height;
     local shave_horizontal shave_vertical
-    local shave_options="";
 
     # Grab dcraw's output image dimensions
     output_width="$(exiftool -s -s -s -ImageWidth "${output_file}")"
@@ -703,10 +705,9 @@ function buildMogrifyShaveOptions {
 
     # Prepare result
     if [ -n "${shave_horizontal}" ] && [ -n "${shave_vertical}" ] ; then
-        shave_options+=" -shave ${shave_horizontal}x${shave_vertical}"
+        mogrify_shave_options_array+=(-shave "${shave_horizontal}x${shave_vertical}")
     fi;
 
-    echo "${shave_options}"
 }
 
 
@@ -721,9 +722,6 @@ function buildMogrifyCropOptions {
     local input_file="${1}"
     local xmp_file="${2}"
     local output_file="${3}"
-
-    # Prepare results
-    local crop_options=""
 
 
     # -----------------------------------------
@@ -745,7 +743,6 @@ function buildMogrifyCropOptions {
     if [ "${has_crop}" = "True" ]; then
 
         local image_width image_height;
-        local shaving_mogrify_options;
         local CropTop CropBottom CropLeft CropRight;
         local width_perc height_perc offset_horizontal offset_vertical;
 
@@ -753,8 +750,8 @@ function buildMogrifyCropOptions {
         image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
         image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
 
-        shaving_mogrify_options="$(buildMogrifyShaveOptions "${input_file}" "${output_file}")"
-        crop_options+=" ${shaving_mogrify_options}"
+        # Shave first...
+        buildMogrifyShaveOptions "${input_file}" "${output_file}"
 
         # Fetch percentage
         CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
@@ -771,11 +768,9 @@ function buildMogrifyCropOptions {
         offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
 
         # 3. Finally, add crop information
-        crop_options+=" -crop ${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}"
+        mogrify_crop_options_array+=(-crop "${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}")
     fi
 
-    # Print result
-    echo "${crop_options}"
 }
 
 
@@ -808,7 +803,7 @@ function buildMogrifyProfileOptions {
     esac
 
     if [ -n "${icc_profile_path}" ]; then
-        echo "-profile ${icc_profile_path}"
+        mogrify_options_array+=(-profile "${icc_profile_path}")
     fi
 }
 
@@ -821,26 +816,20 @@ function buildMogrifyFlipFlopOptions {
 
     # Requirements
     local flipflop_positive="${1:-}"; shift;
-    local result=""
 
     case "${flipflop_positive}" in
         flipflop|vh|both)
-            result="-flip -flop"
+            mogrify_options_array+=(-flip -flop)
             ;;
         flip|v|vertical)
-            result="-flip"
+            mogrify_options_array+=(-flip)
             ;;
         flop|h|horizontal)
-            result="-flop"
+            mogrify_options_array+=(-flop)
             ;;
         *)
-            result=""
             ;;
     esac
-
-    if [ -n "${result}" ]; then
-        echo "${result}"
-    fi
 }
 
 
@@ -849,18 +838,12 @@ function buildMogrifyFlipFlopOptions {
 #    Usage: buildMogrifyResizeOptions <size>
 # ======================================
 function buildMogrifyResizeOptions {
-
     # Requirements
     local resize_width="${1}"
-    local result=""
 
     # Resize image on its larger side
     if [ "${resize_width}" -gt 0 ]; then
-      result="-resize ${resize_width}x${resize_width}>"
-    fi
-
-    if [ -n "${result}" ]; then
-        echo "${result}"
+      mogrify_options_array+=(-resize "${resize_width}x${resize_width}>")
     fi
 }
 
@@ -873,27 +856,19 @@ function buildMogrifyResizeOptions {
 # ======================================
 function buildMogrifyOptions {
 
-    local mogrify_options flipflop_options resize_options icc_profile_options;
-
     # Flip or flop the image, if required.
-    flipflop_options="$(buildMogrifyFlipFlopOptions "${flipflop_positive}" )"
-    mogrify_options+=" ${flipflop_options}"
-
+    buildMogrifyFlipFlopOptions "${flipflop_positive}"
 
     # Resize image on its larger side
-    resize_options="$(buildMogrifyResizeOptions "${resize_width}" )"
-    mogrify_options+=" ${resize_options}"
+    buildMogrifyResizeOptions "${resize_width}"
 
 
     # Build "-profile" options
-    icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
-    mogrify_options+=" ${icc_profile_options}"
-
+    buildMogrifyProfileOptions "${desaturate_colors}"
 
     #  Compress image
-    mogrify_options+=" -compress Zip"
+    mogrify_options_array+=(-compress Zip)
 
-    echo "${mogrify_options}"
 }
 
 
