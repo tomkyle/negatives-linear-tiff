@@ -572,8 +572,8 @@ function convertRawPhotos {
             buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}"
             IFS="${DEFAULT_IFS}"
             e_debug "$(printf "\n%s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}")"
-            IFS="${SAFER_IFS}"
             e_success ""
+            IFS="${SAFER_IFS}"
         fi
 
 
@@ -585,13 +585,12 @@ function convertRawPhotos {
         e_debug "$(printf "\nmogrify %s %s %s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}" "${mogrify_options_array[*]}")"
         e_success ""
 
-        IFS="${DEFAULT_IFS}"
         (mogrify "${mogrify_shave_options_array[@]}" "${mogrify_crop_options_array[@]}" "${mogrify_options_array[@]}" "${output_tiff}") || {
             e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
             continue
         }
-        IFS="${SAFER_IFS}"
         e_success ""
+        IFS="${SAFER_IFS}"
 
         # Prepare result output
         local result_file="${output_tiff}"
