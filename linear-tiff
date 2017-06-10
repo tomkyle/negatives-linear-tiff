@@ -1086,7 +1086,7 @@ function main {
     if [ $use_batch_mode -gt 0 ]; then
         runBatchMode ${recursion_arguments}
     else
-        convertRawPhotos ${image_parameters_array[@]}
+        convertRawPhotos "${image_parameters_array[@]}"
     fi;
 
 }
