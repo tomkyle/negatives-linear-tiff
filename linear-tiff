@@ -984,7 +984,7 @@ function main {
     # Keeps all CLI arguments without -a or --all.
     # Used by runBatchMode when letting GNU Parallel
     # call this very script.
-    local recursion_arguments=""
+    local -a recursion_arguments_array=()
 
     # Keeps anything that does not look like an option.
     local -a image_parameters_array
@@ -1014,44 +1014,44 @@ function main {
                 ;;
             -c|--crop)
                 crop_output=1
-                recursion_arguments+=" ${__option}"
+                recursion_arguments_array+=(${__option})
                 ;;
             -d|--desaturate)
                 desaturate_colors=1
-                recursion_arguments+=" ${__option}"
+                recursion_arguments_array+=(${__option})
                 ;;
             --debug)
                 debug_mode=1
-                recursion_arguments+=" ${__option}"
+                recursion_arguments_array+=(${__option})
                 ;;
             -v|--verbous)
                 verbous_mode=1
-                recursion_arguments+=" ${__option}"
+                recursion_arguments_array+=(${__option})
                 ;;
 
             -f|-m|--flipflop|--mirror)
                 _require_argument "${__option}" "${__maybe_param}"
                 flipflop_positive="${__maybe_param}"
-                recursion_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments_array+=(${__option} ${__maybe_param})
                 shift
                 ;;
 
             -o|--output)
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
-                recursion_arguments+=" ${__option} \"${__maybe_param}\""
+                recursion_arguments_array+=(${__option} "${__maybe_param}")
                 shift
                 ;;
             --rating)
                 _require_argument "${__option}" "${__maybe_param}"
                 rating_threshold=${__maybe_param}
-                recursion_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments_array+=(${__option} ${__maybe_param})
                 shift
                 ;;
             -r|-w|--resize|--width)
                 _require_argument "${__option}" "${__maybe_param}"
                 resize_width=${__maybe_param}
-                recursion_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments_array+=(${__option} ${__maybe_param})
                 shift
                 ;;
             --endopts)
@@ -1066,7 +1066,7 @@ function main {
                 # "Anything else must be an image parameter"
                 # This is a WORKAROUND, as without this "*)" block any given image parameters
                 # after the arguments seem to get lost (i.e., stuck in last $__option checked).
-                image_parameters_array+=(${__option})
+                image_parameters_array+=("${__option}")
                 ;;
         esac
         shift
@@ -1084,7 +1084,7 @@ function main {
     fi;
 
     if [ $use_batch_mode -gt 0 ]; then
-        runBatchMode ${recursion_arguments}
+        runBatchMode "${recursion_arguments_array[@]}"
     else
         convertRawPhotos "${image_parameters_array[@]}"
     fi;
