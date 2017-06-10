@@ -145,7 +145,7 @@ declare -a DCRAW_OPTIONS_ARR=()
 # List of possible script arguments (getopts)
 # Very much like getopts, expected short options should be appended to the
 # string here. Any option followed by a ':' takes a required argument.
-readonly OPTIONS_LIST="achdvf:o:r:"
+readonly OPTIONS_LIST="achdvf:m:o:r:w:"
 
 # Verbous mode:
 # Disabled per default; enable with -v flag
