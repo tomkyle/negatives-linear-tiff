@@ -132,7 +132,11 @@ declare DCRAW_WHITE_BALANCE="w"
 
 
 # Parameters for calling dcraw.
-declare -a DCRAW_OPTIONS_ARR=()
+declare -a dcraw_options_array=()
+# Parameters for calling mogrify.
+declare -a mogrify_shave_options_array=()
+declare -a mogrify_crop_options_array=()
+declare -a mogrify_options_array=()
 
 
 
@@ -457,7 +461,7 @@ function convertRawPhotos {
     if [ $verbous_mode -gt 0 ]; then
       IFS="${DEFAULT_IFS}"
       echo "Create linear TIFF with:"
-      e_verbous "$(printf "dcraw %s\n" "${DCRAW_OPTIONS_ARR[*]}")"
+      e_verbous "$(printf "dcraw %s\n" "${dcraw_options_array[*]}")"
       IFS=$"{SAFER_IFS}"
     fi
 
@@ -465,10 +469,12 @@ function convertRawPhotos {
     #  How to mangle dcraw's output TIFF:
     #  Build mogrify's options string.
     # ---------------------------------------
-    local mogrify_options; mogrify_options="$(buildMogrifyOptions)"
+    buildMogrifyOptions
     if [ $verbous_mode -gt 0 ]; then
+      IFS="${DEFAULT_IFS}"
       echo "Mangle dcraw output with:"
-      e_verbous "mogrify ${mogrify_options}"
+      e_verbous "$(printf "mogrify %s\n" "${mogrify_options_array[*]}")"
+      IFS=$"{SAFER_IFS}"
     fi
 
 
@@ -520,7 +526,7 @@ function convertRawPhotos {
         || rating="$(exiftool -s -s -s -Rating "${RAW_PHOTO}")"
 
         if [ "${rating}" -lt "${rating_threshold}" ]; then
-          e_warning "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
+          e_info "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
           continue;
         fi
 
@@ -542,8 +548,8 @@ function convertRawPhotos {
         printf "Linear TIFF "
 
         IFS="${DEFAULT_IFS}"
-        e_debug "$(printf "\ndcraw %s %s " "${DCRAW_OPTIONS_ARR[*]}" "${RAW_PHOTO}")"
-        dcraw "${DCRAW_OPTIONS_ARR[@]}" "${RAW_PHOTO}" || {
+        e_debug "$(printf "\ndcraw %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
+        dcraw "${dcraw_options_array[@]}" "${RAW_PHOTO}" || {
           e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
           continue
         }
@@ -562,16 +568,12 @@ function convertRawPhotos {
         # Consider individual image crop settings
         # ---------------------------------------
         if [ $crop_output -gt 0 ]; then
-            local cropping_mogrify_options;
-            cropping_mogrify_options="$(buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}")"
-
-            if [ -n "${cropping_mogrify_options}" ]; then
-                printf "Prepare cropping "
-                e_debug "$(printf "\n%s " "${cropping_mogrify_options}")"
-                # Prepend to existing options string
-                mogrify_options="${cropping_mogrify_options} ${mogrify_options}"
-                e_success ""
-            fi
+            printf "Prepare cropping "
+            buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}"
+            IFS="${DEFAULT_IFS}"
+            e_debug "$(printf "\n%s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}")"
+            e_success ""
+            IFS="${SAFER_IFS}"
         fi
 
 
@@ -579,16 +581,16 @@ function convertRawPhotos {
         #  Handle output file
         # ---------------------------------------
         printf "Mangle output file "
-        e_debug "$(printf "\nmogrify %s " "${mogrify_options}")"
-
-
         IFS="${DEFAULT_IFS}"
-        (mogrify ${mogrify_options} "${output_tiff}") || {
+        e_debug "$(printf "\nmogrify %s %s %s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}" "${mogrify_options_array[*]}")"
+        e_success ""
+
+        (mogrify "${mogrify_shave_options_array[@]}" "${mogrify_crop_options_array[@]}" "${mogrify_options_array[@]}" "${output_tiff}") || {
             e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
             continue
         }
-        IFS="${SAFER_IFS}"
         e_success ""
+        IFS="${SAFER_IFS}"
 
         # Prepare result output
         local result_file="${output_tiff}"
@@ -619,24 +621,24 @@ function buildDcrawOptions {
 
 
     # Add white balance setting
-    [ "${DCRAW_WHITE_BALANCE}" = "w" ] && DCRAW_OPTIONS_ARR+=(-w)
+    [ "${DCRAW_WHITE_BALANCE}" = "w" ] && dcraw_options_array+=(-w)
 
     # Add flip image setting
-    [ -n "${DCRAW_FLIP_IMAGE}" ] && DCRAW_OPTIONS_ARR+=(-t ${DCRAW_FLIP_IMAGE})
+    [ -n "${DCRAW_FLIP_IMAGE}" ] && dcraw_options_array+=(-t ${DCRAW_FLIP_IMAGE})
 
     # How to handle highlights
-    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && DCRAW_OPTIONS_ARR+=(-H ${DCRAW_HIGHLIGHTS_VALUE})
+    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && dcraw_options_array+=(-H ${DCRAW_HIGHLIGHTS_VALUE})
 
     # Add demosaicing algorithm number
-    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && DCRAW_OPTIONS_ARR+=(-q ${DCRAW_BAYER_DEMOSAIC_VALUE})
+    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && dcraw_options_array+=(-q ${DCRAW_BAYER_DEMOSAIC_VALUE})
 
     # Colorspace
-    DCRAW_OPTIONS_ARR+=(-o ${DCRAW_COLORSPACE_VALUE})
+    dcraw_options_array+=(-o ${DCRAW_COLORSPACE_VALUE})
 
     # -4: 16 bit linearity, same as "-6 -W -g 1 1".
     # -T: Output TIFF instead of PPM
-    DCRAW_OPTIONS_ARR+=(-4)
-    DCRAW_OPTIONS_ARR+=(-T)
+    dcraw_options_array+=(-4)
+    dcraw_options_array+=(-T)
 
     ### This is tooo noisy....
     # [ "${verbous_mode}" -gt 0 ] && dcraw_options="-v ${dcraw_options}"
@@ -667,7 +669,6 @@ function buildMogrifyShaveOptions {
     local output_width output_height;
     local has_embedded_jpg thumbnail_width thumbnail_height;
     local shave_horizontal shave_vertical
-    local shave_options="";
 
     # Grab dcraw's output image dimensions
     output_width="$(exiftool -s -s -s -ImageWidth "${output_file}")"
@@ -703,10 +704,9 @@ function buildMogrifyShaveOptions {
 
     # Prepare result
     if [ -n "${shave_horizontal}" ] && [ -n "${shave_vertical}" ] ; then
-        shave_options+=" -shave ${shave_horizontal}x${shave_vertical}"
+        mogrify_shave_options_array+=(-shave "${shave_horizontal}x${shave_vertical}")
     fi;
 
-    echo "${shave_options}"
 }
 
 
@@ -721,9 +721,6 @@ function buildMogrifyCropOptions {
     local input_file="${1}"
     local xmp_file="${2}"
     local output_file="${3}"
-
-    # Prepare results
-    local crop_options=""
 
 
     # -----------------------------------------
@@ -745,7 +742,6 @@ function buildMogrifyCropOptions {
     if [ "${has_crop}" = "True" ]; then
 
         local image_width image_height;
-        local shaving_mogrify_options;
         local CropTop CropBottom CropLeft CropRight;
         local width_perc height_perc offset_horizontal offset_vertical;
 
@@ -753,8 +749,8 @@ function buildMogrifyCropOptions {
         image_width="$(exiftool -s -s -s -ImageWidth "${input_file}")"
         image_height="$(exiftool -s -s -s -ImageHeight "${input_file}")"
 
-        shaving_mogrify_options="$(buildMogrifyShaveOptions "${input_file}" "${output_file}")"
-        crop_options+=" ${shaving_mogrify_options}"
+        # Shave first...
+        buildMogrifyShaveOptions "${input_file}" "${output_file}"
 
         # Fetch percentage
         CropTop="$(exiftool -s -s -s -CropTop "${work_file}")"
@@ -771,11 +767,9 @@ function buildMogrifyCropOptions {
         offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
 
         # 3. Finally, add crop information
-        crop_options+=" -crop ${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}"
+        mogrify_crop_options_array+=(-crop "${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}")
     fi
 
-    # Print result
-    echo "${crop_options}"
 }
 
 
@@ -808,7 +802,7 @@ function buildMogrifyProfileOptions {
     esac
 
     if [ -n "${icc_profile_path}" ]; then
-        echo "-profile ${icc_profile_path}"
+        mogrify_options_array+=(-profile "${icc_profile_path}")
     fi
 }
 
@@ -821,26 +815,20 @@ function buildMogrifyFlipFlopOptions {
 
     # Requirements
     local flipflop_positive="${1:-}"; shift;
-    local result=""
 
     case "${flipflop_positive}" in
         flipflop|vh|both)
-            result="-flip -flop"
+            mogrify_options_array+=(-flip -flop)
             ;;
         flip|v|vertical)
-            result="-flip"
+            mogrify_options_array+=(-flip)
             ;;
         flop|h|horizontal)
-            result="-flop"
+            mogrify_options_array+=(-flop)
             ;;
         *)
-            result=""
             ;;
     esac
-
-    if [ -n "${result}" ]; then
-        echo "${result}"
-    fi
 }
 
 
@@ -849,18 +837,12 @@ function buildMogrifyFlipFlopOptions {
 #    Usage: buildMogrifyResizeOptions <size>
 # ======================================
 function buildMogrifyResizeOptions {
-
     # Requirements
     local resize_width="${1}"
-    local result=""
 
     # Resize image on its larger side
     if [ "${resize_width}" -gt 0 ]; then
-      result="-resize ${resize_width}x${resize_width}>"
-    fi
-
-    if [ -n "${result}" ]; then
-        echo "${result}"
+      mogrify_options_array+=(-resize "${resize_width}x${resize_width}>")
     fi
 }
 
@@ -873,27 +855,19 @@ function buildMogrifyResizeOptions {
 # ======================================
 function buildMogrifyOptions {
 
-    local mogrify_options flipflop_options resize_options icc_profile_options;
-
     # Flip or flop the image, if required.
-    flipflop_options="$(buildMogrifyFlipFlopOptions "${flipflop_positive}" )"
-    mogrify_options+=" ${flipflop_options}"
-
+    buildMogrifyFlipFlopOptions "${flipflop_positive}"
 
     # Resize image on its larger side
-    resize_options="$(buildMogrifyResizeOptions "${resize_width}" )"
-    mogrify_options+=" ${resize_options}"
+    buildMogrifyResizeOptions "${resize_width}"
 
 
     # Build "-profile" options
-    icc_profile_options="$(buildMogrifyProfileOptions ${desaturate_colors} )"
-    mogrify_options+=" ${icc_profile_options}"
-
+    buildMogrifyProfileOptions "${desaturate_colors}"
 
     #  Compress image
-    mogrify_options+=" -compress Zip"
+    mogrify_options_array+=(-compress Zip)
 
-    echo "${mogrify_options}"
 }
 
 
@@ -984,7 +958,7 @@ function main {
     # Keeps all CLI arguments without -a or --all.
     # Used by runBatchMode when letting GNU Parallel
     # call this very script.
-    local recursion_arguments=""
+    local -a recursion_arguments_array=()
 
     # Keeps anything that does not look like an option.
     local -a image_parameters_array
@@ -1014,44 +988,44 @@ function main {
                 ;;
             -c|--crop)
                 crop_output=1
-                recursion_arguments+=" ${__option}"
+                recursion_arguments_array+=(${__option})
                 ;;
             -d|--desaturate)
                 desaturate_colors=1
-                recursion_arguments+=" ${__option}"
+                recursion_arguments_array+=(${__option})
                 ;;
             --debug)
                 debug_mode=1
-                recursion_arguments+=" ${__option}"
+                recursion_arguments_array+=(${__option})
                 ;;
             -v|--verbous)
                 verbous_mode=1
-                recursion_arguments+=" ${__option}"
+                recursion_arguments_array+=(${__option})
                 ;;
 
             -f|-m|--flipflop|--mirror)
                 _require_argument "${__option}" "${__maybe_param}"
                 flipflop_positive="${__maybe_param}"
-                recursion_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments_array+=(${__option} ${__maybe_param})
                 shift
                 ;;
 
             -o|--output)
                 _require_argument "${__option}" "${__maybe_param}"
                 output_directory="${__maybe_param}"
-                recursion_arguments+=" ${__option} \"${__maybe_param}\""
+                recursion_arguments_array+=(${__option} "${__maybe_param}")
                 shift
                 ;;
             --rating)
                 _require_argument "${__option}" "${__maybe_param}"
                 rating_threshold=${__maybe_param}
-                recursion_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments_array+=(${__option} ${__maybe_param})
                 shift
                 ;;
             -r|-w|--resize|--width)
                 _require_argument "${__option}" "${__maybe_param}"
                 resize_width=${__maybe_param}
-                recursion_arguments+=" ${__option} ${__maybe_param}"
+                recursion_arguments_array+=(${__option} ${__maybe_param})
                 shift
                 ;;
             --endopts)
@@ -1066,7 +1040,7 @@ function main {
                 # "Anything else must be an image parameter"
                 # This is a WORKAROUND, as without this "*)" block any given image parameters
                 # after the arguments seem to get lost (i.e., stuck in last $__option checked).
-                image_parameters_array+=(${__option})
+                image_parameters_array+=("${__option}")
                 ;;
         esac
         shift
@@ -1084,9 +1058,9 @@ function main {
     fi;
 
     if [ $use_batch_mode -gt 0 ]; then
-        runBatchMode ${recursion_arguments}
+        runBatchMode "${recursion_arguments_array[@]}"
     else
-        convertRawPhotos ${image_parameters_array[@]}
+        convertRawPhotos "${image_parameters_array[@]}"
     fi;
 
 }
