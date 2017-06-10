@@ -526,7 +526,7 @@ function convertRawPhotos {
         || rating="$(exiftool -s -s -s -Rating "${RAW_PHOTO}")"
 
         if [ "${rating}" -lt "${rating_threshold}" ]; then
-          e_warning "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
+          e_info "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
           continue;
         fi
 
