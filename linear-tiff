@@ -635,9 +635,11 @@ function buildDcrawOptions {
     # Colorspace
     dcraw_options_array+=(-o ${DCRAW_COLORSPACE_VALUE})
 
-    # -4: 16 bit linearity, same as "-6 -W -g 1 1".
-    # -T: Output TIFF instead of PPM
+    # 16 bit linearity, same as "-6 -W -g 1 1".
     dcraw_options_array+=(-4)
+
+    #  Output TIFF instead of PPM. If disabling this,
+    #  do not forget to redefine DCRAW_DEFAULT_OUTPUT_EXTENSION
     dcraw_options_array+=(-T)
 
     ### This is tooo noisy....
