@@ -88,7 +88,7 @@ readonly DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
 
 # Default extension for sidecar files
 # created by Raw converters.
-declare RAWFILE_SIDECAR_FILE_EXTENSION="xmp"
+declare rawfile_sidecar_file_extension="xmp"
 
 # Parameters for calling dcraw.
 declare -a dcraw_options_array=()
@@ -112,7 +112,7 @@ readonly OPTIONS_LIST="achdvf:m:o:r:w:"
 #
 # -H 0 Clip all highlights to solid white (default).
 # -H 5 as a compromise
-declare -i DCRAW_HIGHLIGHTS_VALUE=5
+declare -i dcraw_highlights_value=5
 
 # Bayer demosaicing algorithm dcraw should use
 #
@@ -124,7 +124,7 @@ declare -i DCRAW_HIGHLIGHTS_VALUE=5
 #
 # Leave blank when not needed.
 # Developer Note: no -i flag here, since variable can not be checked for being null
-declare DCRAW_BAYER_DEMOSAIC_VALUE=3
+declare dcraw_bayer_demosaic_algorithm=3
 
 # dcraw's output colorspace
 #
@@ -135,19 +135,19 @@ declare DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-declare -i DCRAW_COLORSPACE_VALUE=4
+declare -i dcraw_output_colorspace=4
 
 # Dcraw's image flipping
 #
 # Disable with 0
 # Leave blank to flip automatically.
-declare DCRAW_FLIP_IMAGE=0
+declare dcraw_flip_image=0
 
 # Dcraw's White balance
 #
 # "w" White balance according to camera settings
 #     at the moment of the shot
-declare DCRAW_WHITE_BALANCE="w"
+declare dcraw_white_balance="w"
 
 
 # --------------------------------------
@@ -198,6 +198,7 @@ declare -i crop_output=0
 #
 # To omit rejected images, call script with "--rating 0"
 declare -i rating_threshold=-1
+
 
 # --------------------------------------
 # Miscellaneous
@@ -378,7 +379,7 @@ function runBatchMode {
     local -r FUNC_ARGUMENTS=("${@}")
 
     # For statistic purposes
-    local START_TIME=$SECONDS
+    local start_time=$SECONDS
     local -r CPUs=$(getconf _NPROCESSORS_ONLN)
 
     # ---------------------------------------
@@ -417,7 +418,7 @@ function runBatchMode {
     # ---------------------------------------
 
     # Some stats
-    local -r ELAPSED_TIME=$((SECONDS - START_TIME))
+    local -r ELAPSED_TIME=$((SECONDS - start_time))
 
     printf "Some stats:\n"
     printf "CPUs used:     %s\n"          "${CPUs}"
@@ -517,7 +518,7 @@ function convertRawPhotos {
 
         # Build output filename as dcraw would do
         output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
-        xmp_sidecar_file="${input_file_basename}.${RAWFILE_SIDECAR_FILE_EXTENSION}"
+        xmp_sidecar_file="${input_file_basename}.${rawfile_sidecar_file_extension}"
 
 
         # ---------------------------------------
@@ -625,19 +626,19 @@ function buildDcrawOptions {
 
 
     # Add white balance setting
-    [ "${DCRAW_WHITE_BALANCE}" = "w" ] && dcraw_options_array+=(-w)
+    [ "${dcraw_white_balance}" = "w" ] && dcraw_options_array+=(-w)
 
     # Add flip image setting
-    [ -n "${DCRAW_FLIP_IMAGE}" ] && dcraw_options_array+=(-t ${DCRAW_FLIP_IMAGE})
+    [ -n "${dcraw_flip_image}" ] && dcraw_options_array+=(-t ${dcraw_flip_image})
 
     # How to handle highlights
-    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && dcraw_options_array+=(-H ${DCRAW_HIGHLIGHTS_VALUE})
+    [ $dcraw_highlights_value -gt 0 ] && dcraw_options_array+=(-H ${dcraw_highlights_value})
 
     # Add demosaicing algorithm number
-    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && dcraw_options_array+=(-q ${DCRAW_BAYER_DEMOSAIC_VALUE})
+    [ -n "${dcraw_bayer_demosaic_algorithm}" ] && dcraw_options_array+=(-q ${dcraw_bayer_demosaic_algorithm})
 
     # Colorspace
-    dcraw_options_array+=(-o ${DCRAW_COLORSPACE_VALUE})
+    dcraw_options_array+=(-o ${dcraw_output_colorspace})
 
     # 16 bit linearity, same as "-6 -W -g 1 1".
     dcraw_options_array+=(-4)
