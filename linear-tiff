@@ -83,7 +83,7 @@ declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 # Dcraw output
 #
 # Default extension of dcraw's TIFF output
-declare DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
+declare DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
 
 
 # Clip highlights method
@@ -512,7 +512,7 @@ function convertRawPhotos {
         input_file_basename="${input_file_basename##*/}" # remove trailing slash
 
         # Build output filename as dcraw would do
-        output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
+        output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
         xmp_sidecar_file="${input_file_basename}.xmp"
 
 
