@@ -83,7 +83,7 @@ declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 # Dcraw output
 #
 # Default extension of dcraw's TIFF output
-declare DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
+readonly DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
 
 
 # Clip highlights method
