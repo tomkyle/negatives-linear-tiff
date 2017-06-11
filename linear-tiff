@@ -645,8 +645,6 @@ function buildDcrawOptions {
     ### This is tooo noisy....
     # [ "${verbous_mode}" -gt 0 ] && dcraw_options="-v ${dcraw_options}"
 
-    #echo "${dcraw_options}"
-
 }
 
 
