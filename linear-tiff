@@ -69,11 +69,12 @@ readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
 readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
 
 # Where to search
-declare SEARCH_DIRECTORY='.'
+declare search_directory='.'
 
 # What to search
 # The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
-declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+declare search_files_iregex='.*\.(nef|raw|cr2)'
+
 
 
 # --------------------------------------
@@ -83,15 +84,35 @@ declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 # Dcraw output
 #
 # Default extension of dcraw's TIFF output
-declare DCRAW_DEFAULT_TIFF_EXTENSION="tiff"
+readonly DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
 
+# Default extension for sidecar files
+# created by Raw converters.
+declare rawfile_sidecar_file_extension="xmp"
+
+# Parameters for calling dcraw.
+declare -a dcraw_options_array=()
+
+# Parameters for calling mogrify.
+declare -a mogrify_shave_options_array=()
+declare -a mogrify_crop_options_array=()
+declare -a mogrify_options_array=()
+
+# List of possible script arguments (getopts)
+# Very much like getopts, expected short options should be appended to the
+# string here. Any option followed by a ':' takes a required argument.
+readonly OPTIONS_LIST="achdvf:m:o:r:w:"
+
+
+# --------------------------------------
+# DCRAW defaults
+# --------------------------------------
 
 # Clip highlights method
 #
 # -H 0 Clip all highlights to solid white (default).
 # -H 5 as a compromise
-declare -i DCRAW_HIGHLIGHTS_VALUE=5
-
+declare -i dcraw_highlights_value=5
 
 # Bayer demosaicing algorithm dcraw should use
 #
@@ -103,8 +124,7 @@ declare -i DCRAW_HIGHLIGHTS_VALUE=5
 #
 # Leave blank when not needed.
 # Developer Note: no -i flag here, since variable can not be checked for being null
-declare DCRAW_BAYER_DEMOSAIC_VALUE=3
-
+declare dcraw_bayer_demosaic_algorithm=3
 
 # dcraw's output colorspace
 #
@@ -115,41 +135,25 @@ declare DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 4   Kodak ProPhoto RGB D65
 # 5   XYZ
 # 6   ACES
-declare -i DCRAW_COLORSPACE_VALUE=4
-
+declare -i dcraw_output_colorspace=4
 
 # Dcraw's image flipping
 #
 # Disable with 0
 # Leave blank to flip automatically.
-declare DCRAW_FLIP_IMAGE=0
+declare dcraw_flip_image=0
 
 # Dcraw's White balance
 #
 # "w" White balance according to camera settings
 #     at the moment of the shot
-declare DCRAW_WHITE_BALANCE="w"
-
-
-# Parameters for calling dcraw.
-declare -a dcraw_options_array=()
-# Parameters for calling mogrify.
-declare -a mogrify_shave_options_array=()
-declare -a mogrify_crop_options_array=()
-declare -a mogrify_options_array=()
-
+declare dcraw_white_balance="w"
 
 
 # --------------------------------------
 # User settings:
 # These settings can be set with command line arguments.
 # --------------------------------------
-
-
-# List of possible script arguments (getopts)
-# Very much like getopts, expected short options should be appended to the
-# string here. Any option followed by a ':' takes a required argument.
-readonly OPTIONS_LIST="achdvf:m:o:r:w:"
 
 # Verbous mode:
 # Disabled per default; enable with -v flag
@@ -175,7 +179,7 @@ declare -i debug_mode=0
 # Disabled per default ("")
 # Use with "-f flip|flop|flipflop"
 # or set value here.
-declare flipflop_positive=""
+declare mirror_output=""
 
 # Where to store the output images.
 # Default ist current work directory.
@@ -194,6 +198,7 @@ declare -i crop_output=0
 #
 # To omit rejected images, call script with "--rating 0"
 declare -i rating_threshold=-1
+
 
 # --------------------------------------
 # Miscellaneous
@@ -374,14 +379,14 @@ function runBatchMode {
     local -r FUNC_ARGUMENTS=("${@}")
 
     # For statistic purposes
-    local START_TIME=$SECONDS
+    local start_time=$SECONDS
     local -r CPUs=$(getconf _NPROCESSORS_ONLN)
 
     # ---------------------------------------
     # Find stuff to work on
     # ---------------------------------------
     local -r TODO_TXT=$(createTodoFile)
-    findFiles "${SEARCH_FILES_IREGEX}" "${SEARCH_DIRECTORY}" > "${TODO_TXT}"
+    findFiles "${search_files_iregex}" "${search_directory}" > "${TODO_TXT}"
     local -r number_of_images=$(countLinesInFile "${TODO_TXT}")
 
 
@@ -413,7 +418,7 @@ function runBatchMode {
     # ---------------------------------------
 
     # Some stats
-    local -r ELAPSED_TIME=$((SECONDS - START_TIME))
+    local -r ELAPSED_TIME=$((SECONDS - start_time))
 
     printf "Some stats:\n"
     printf "CPUs used:     %s\n"          "${CPUs}"
@@ -512,8 +517,8 @@ function convertRawPhotos {
         input_file_basename="${input_file_basename##*/}" # remove trailing slash
 
         # Build output filename as dcraw would do
-        output_tiff="${input_file_basename}.${DCRAW_DEFAULT_TIFF_EXTENSION}"
-        xmp_sidecar_file="${input_file_basename}.xmp"
+        output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
+        xmp_sidecar_file="${input_file_basename}.${rawfile_sidecar_file_extension}"
 
 
         # ---------------------------------------
@@ -535,10 +540,10 @@ function convertRawPhotos {
         # Show some image info
         # ---------------------------------------
         e_info "$(dcraw -i "${RAW_PHOTO}")"
-        if [ $verbous_mode -gt 0 ]; then
+        [ $verbous_mode -gt 0 ] && {
           e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
           echo;
-        fi
+        }
 
 
 
@@ -621,29 +626,29 @@ function buildDcrawOptions {
 
 
     # Add white balance setting
-    [ "${DCRAW_WHITE_BALANCE}" = "w" ] && dcraw_options_array+=(-w)
+    [ "${dcraw_white_balance}" = "w" ] && dcraw_options_array+=(-w)
 
     # Add flip image setting
-    [ -n "${DCRAW_FLIP_IMAGE}" ] && dcraw_options_array+=(-t ${DCRAW_FLIP_IMAGE})
+    [ -n "${dcraw_flip_image}" ] && dcraw_options_array+=(-t ${dcraw_flip_image})
 
     # How to handle highlights
-    [ $DCRAW_HIGHLIGHTS_VALUE -gt 0 ] && dcraw_options_array+=(-H ${DCRAW_HIGHLIGHTS_VALUE})
+    [ $dcraw_highlights_value -gt 0 ] && dcraw_options_array+=(-H ${dcraw_highlights_value})
 
     # Add demosaicing algorithm number
-    [ -n "${DCRAW_BAYER_DEMOSAIC_VALUE}" ] && dcraw_options_array+=(-q ${DCRAW_BAYER_DEMOSAIC_VALUE})
+    [ -n "${dcraw_bayer_demosaic_algorithm}" ] && dcraw_options_array+=(-q ${dcraw_bayer_demosaic_algorithm})
 
     # Colorspace
-    dcraw_options_array+=(-o ${DCRAW_COLORSPACE_VALUE})
+    dcraw_options_array+=(-o ${dcraw_output_colorspace})
 
-    # -4: 16 bit linearity, same as "-6 -W -g 1 1".
-    # -T: Output TIFF instead of PPM
+    # 16 bit linearity, same as "-6 -W -g 1 1".
     dcraw_options_array+=(-4)
+
+    #  Output TIFF instead of PPM. If disabling this,
+    #  do not forget to redefine DCRAW_DEFAULT_OUTPUT_EXTENSION
     dcraw_options_array+=(-T)
 
     ### This is tooo noisy....
     # [ "${verbous_mode}" -gt 0 ] && dcraw_options="-v ${dcraw_options}"
-
-    #echo "${dcraw_options}"
 
 }
 
@@ -814,9 +819,9 @@ function buildMogrifyProfileOptions {
 function buildMogrifyFlipFlopOptions {
 
     # Requirements
-    local flipflop_positive="${1:-}"; shift;
+    local mirror_output="${1:-}"; shift;
 
-    case "${flipflop_positive}" in
+    case "${mirror_output}" in
         flipflop|vh|both)
             mogrify_options_array+=(-flip -flop)
             ;;
@@ -856,7 +861,7 @@ function buildMogrifyResizeOptions {
 function buildMogrifyOptions {
 
     # Flip or flop the image, if required.
-    buildMogrifyFlipFlopOptions "${flipflop_positive}"
+    buildMogrifyFlipFlopOptions "${mirror_output}"
 
     # Resize image on its larger side
     buildMogrifyResizeOptions "${resize_width}"
@@ -1005,7 +1010,7 @@ function main {
 
             -f|-m|--flipflop|--mirror)
                 _require_argument "${__option}" "${__maybe_param}"
-                flipflop_positive="${__maybe_param}"
+                mirror_output="${__maybe_param}"
                 recursion_arguments_array+=(${__option} ${__maybe_param})
                 shift
                 ;;
