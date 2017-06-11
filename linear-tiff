@@ -76,6 +76,7 @@ declare SEARCH_DIRECTORY='.'
 declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 
 
+
 # --------------------------------------
 # Global settings:
 # --------------------------------------
@@ -85,13 +86,29 @@ declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 # Default extension of dcraw's TIFF output
 readonly DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
 
+# Parameters for calling dcraw.
+declare -a dcraw_options_array=()
+
+# Parameters for calling mogrify.
+declare -a mogrify_shave_options_array=()
+declare -a mogrify_crop_options_array=()
+declare -a mogrify_options_array=()
+
+# List of possible script arguments (getopts)
+# Very much like getopts, expected short options should be appended to the
+# string here. Any option followed by a ':' takes a required argument.
+readonly OPTIONS_LIST="achdvf:m:o:r:w:"
+
+
+# --------------------------------------
+# DCRAW defaults
+# --------------------------------------
 
 # Clip highlights method
 #
 # -H 0 Clip all highlights to solid white (default).
 # -H 5 as a compromise
 declare -i DCRAW_HIGHLIGHTS_VALUE=5
-
 
 # Bayer demosaicing algorithm dcraw should use
 #
@@ -105,7 +122,6 @@ declare -i DCRAW_HIGHLIGHTS_VALUE=5
 # Developer Note: no -i flag here, since variable can not be checked for being null
 declare DCRAW_BAYER_DEMOSAIC_VALUE=3
 
-
 # dcraw's output colorspace
 #
 # 0   Raw color (unique to each camera)
@@ -116,7 +132,6 @@ declare DCRAW_BAYER_DEMOSAIC_VALUE=3
 # 5   XYZ
 # 6   ACES
 declare -i DCRAW_COLORSPACE_VALUE=4
-
 
 # Dcraw's image flipping
 #
@@ -131,26 +146,10 @@ declare DCRAW_FLIP_IMAGE=0
 declare DCRAW_WHITE_BALANCE="w"
 
 
-# Parameters for calling dcraw.
-declare -a dcraw_options_array=()
-
-# Parameters for calling mogrify.
-declare -a mogrify_shave_options_array=()
-declare -a mogrify_crop_options_array=()
-declare -a mogrify_options_array=()
-
-
-
 # --------------------------------------
 # User settings:
 # These settings can be set with command line arguments.
 # --------------------------------------
-
-
-# List of possible script arguments (getopts)
-# Very much like getopts, expected short options should be appended to the
-# string here. Any option followed by a ':' takes a required argument.
-readonly OPTIONS_LIST="achdvf:m:o:r:w:"
 
 # Verbous mode:
 # Disabled per default; enable with -v flag
