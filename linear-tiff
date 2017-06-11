@@ -69,11 +69,11 @@ readonly HOMEBREW_OPT_DIR=$(brew --prefix "$(basename "${0}")")
 readonly WORK_TMPDIR=$(mktemp -du "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp directory name."; }
 
 # Where to search
-declare SEARCH_DIRECTORY='.'
+declare search_directory='.'
 
 # What to search
 # The regex shown here must be suitable for regex find'ing: -iregex '.*\.(nef|raw|cr2)'
-declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
+declare search_files_iregex='.*\.(nef|raw|cr2)'
 
 
 
@@ -385,7 +385,7 @@ function runBatchMode {
     # Find stuff to work on
     # ---------------------------------------
     local -r TODO_TXT=$(createTodoFile)
-    findFiles "${SEARCH_FILES_IREGEX}" "${SEARCH_DIRECTORY}" > "${TODO_TXT}"
+    findFiles "${search_files_iregex}" "${search_directory}" > "${TODO_TXT}"
     local -r number_of_images=$(countLinesInFile "${TODO_TXT}")
 
 
