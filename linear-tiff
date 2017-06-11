@@ -86,6 +86,10 @@ declare SEARCH_FILES_IREGEX='.*\.(nef|raw|cr2)'
 # Default extension of dcraw's TIFF output
 readonly DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
 
+# Default extension for sidecar files
+# created by Raw converters.
+declare RAWFILE_SIDECAR_FILE_EXTENSION="xmp"
+
 # Parameters for calling dcraw.
 declare -a dcraw_options_array=()
 
@@ -513,7 +517,7 @@ function convertRawPhotos {
 
         # Build output filename as dcraw would do
         output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
-        xmp_sidecar_file="${input_file_basename}.xmp"
+        xmp_sidecar_file="${input_file_basename}.${RAWFILE_SIDECAR_FILE_EXTENSION}"
 
 
         # ---------------------------------------
@@ -535,10 +539,10 @@ function convertRawPhotos {
         # Show some image info
         # ---------------------------------------
         e_info "$(dcraw -i "${RAW_PHOTO}")"
-        if [ $verbous_mode -gt 0 ]; then
+        [ $verbous_mode -gt 0 ] && {
           e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
           echo;
-        fi
+        }
 
 
 
