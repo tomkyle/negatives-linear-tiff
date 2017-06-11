@@ -175,7 +175,7 @@ declare -i debug_mode=0
 # Disabled per default ("")
 # Use with "-f flip|flop|flipflop"
 # or set value here.
-declare flipflop_positive=""
+declare mirror_output=""
 
 # Where to store the output images.
 # Default ist current work directory.
@@ -814,9 +814,9 @@ function buildMogrifyProfileOptions {
 function buildMogrifyFlipFlopOptions {
 
     # Requirements
-    local flipflop_positive="${1:-}"; shift;
+    local mirror_output="${1:-}"; shift;
 
-    case "${flipflop_positive}" in
+    case "${mirror_output}" in
         flipflop|vh|both)
             mogrify_options_array+=(-flip -flop)
             ;;
@@ -856,7 +856,7 @@ function buildMogrifyResizeOptions {
 function buildMogrifyOptions {
 
     # Flip or flop the image, if required.
-    buildMogrifyFlipFlopOptions "${flipflop_positive}"
+    buildMogrifyFlipFlopOptions "${mirror_output}"
 
     # Resize image on its larger side
     buildMogrifyResizeOptions "${resize_width}"
@@ -1005,7 +1005,7 @@ function main {
 
             -f|-m|--flipflop|--mirror)
                 _require_argument "${__option}" "${__maybe_param}"
-                flipflop_positive="${__maybe_param}"
+                mirror_output="${__maybe_param}"
                 recursion_arguments_array+=(${__option} ${__maybe_param})
                 shift
                 ;;
