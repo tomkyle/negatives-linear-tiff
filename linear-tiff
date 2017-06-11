@@ -133,6 +133,7 @@ declare DCRAW_WHITE_BALANCE="w"
 
 # Parameters for calling dcraw.
 declare -a dcraw_options_array=()
+
 # Parameters for calling mogrify.
 declare -a mogrify_shave_options_array=()
 declare -a mogrify_crop_options_array=()
