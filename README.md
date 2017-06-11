@@ -1,5 +1,7 @@
 # negatives/linear-tiff
 
+[![Build Status](https://travis-ci.org/tomkyle/negatives-linear-tiff.svg?branch=master)](https://travis-ci.org/tomkyle/negatives-linear-tiff)
+
 **Converts RAW/NEF/CR2 files into linear 16bit-TIFF files.**
 
 - **Mirroring** for negatives digitalized on their emulsion side. 
