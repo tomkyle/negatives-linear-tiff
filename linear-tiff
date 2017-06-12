@@ -300,9 +300,11 @@ function catFirstFound {
     for dir in "${lookup[@]}"; do
         if [ -f "${dir}/${file_to_cat}" ]; then
             cat "${dir}/${file_to_cat}"
+            echo;
+            return 0
         fi;
     done
-    echo;
+    return 1
 }
 
 
@@ -323,8 +325,8 @@ function findFiles {
 # displayHelp
 # --------------------------------------
 function displayHelp {
-    catFirstFound "${USAGE_FILE}"
-    catFirstFound "${CREDITS_FILE}"
+    catFirstFound "${USAGE_FILE}" || e_error "$(printf "Could not find and display file '%s'\n" "${USAGE_FILE}")"
+    catFirstFound "${CREDITS_FILE}" || e_error "$(printf "Could not find and display file '%s'\n" "${CREDITS_FILE}")"
 }
 
 
