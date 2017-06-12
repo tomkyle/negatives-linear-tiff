@@ -6,5 +6,5 @@ engines:
     enabled: true
 ratings:
   paths:
-  - linear-tiff
+  - "linear-tiff"
 exclude_paths: []
