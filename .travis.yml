@@ -1,8 +1,9 @@
 
-env:
-  global:
-    - CC_TEST_REPORTER_ID=cd06e28c1c6e6b509960b9082b3862e74b0374aa6ab2d41a4402e3e9a08075c0
-    - GIT_COMMITTED_AT=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then git log -1 --pretty=format:%ct; else git log -1 --skip 1 --pretty=format:%ct; fi)
+### This reporting stuff did not work. I'll try again later.
+# env:
+#   global:
+#     - CC_TEST_REPORTER_ID=cd06e28c1c6e6b509960b9082b3862e74b0374aa6ab2d41a4402e3e9a08075c0
+#     - GIT_COMMITTED_AT=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then git log -1 --pretty=format:%ct; else git log -1 --skip 1 --pretty=format:%ct; fi)
 
 language: bash
 
@@ -13,14 +14,16 @@ addons:
     packages:
     - shellcheck
 
-rvm:
-  - 2.2.0
-
-before_script:
-  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-  - chmod +x ./cc-test-reporter
+### Did not work
+# rvm:
+#   - 2.2.0
+#
+# before_script:
+#   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+#   - chmod +x ./cc-test-reporter
 
 script:
   - shellcheck linear-tiff
-  - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT; fi
+  ### Did not work
+  # - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT; fi
 
