@@ -46,6 +46,7 @@ function trapCleanupTempDir() {
         printf "\nRemove temporary directory %s ... " "${tmp_dir_to_clean}"
         rm -Rf "${tmp_dir_to_clean}" && e_success
     fi
+    find . -name "exiftool_tmp" -exec rm {} \;
     echo;
 }
 trap trapCleanupTempDir EXIT SIGINT
@@ -574,13 +575,25 @@ function convertRawPhotos {
         # ---------------------------------------
         # Repair missing metadata
         # ---------------------------------------
-        exiftool -overwrite_original \
+        printf "Transfer meta tags "
+
+        if [ -n $(exiftool -s -s -s -Hallo "${output_tiff}") ]; then
+          echo "Hat schon"
+        else
+          echo "Muss noch"
+        fi
+
+        if exiftool -overwrite_original -quiet \
         -mwg:Description="" \
         -mwg:Creator="" \
         -make="" \
         -model="" \
         -software="" \
-        "${output_tiff}" > /dev/null
+        "${output_tiff}"; then
+            e_success ""
+        else
+            e_warning "Fixing meta tags with exiftool failed."
+        fi
 
 
         # ---------------------------------------
