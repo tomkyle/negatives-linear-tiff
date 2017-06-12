@@ -325,7 +325,6 @@ function findFiles {
 function displayHelp {
     catFirstFound "${USAGE_FILE}"
     catFirstFound "${CREDITS_FILE}"
-    exit 1;
 }
 
 
@@ -1060,6 +1059,7 @@ function main {
 
     if [ $print_help -gt 0 ]; then
         displayHelp
+        exit 1;
     fi;
 
     if [ $use_batch_mode -gt 0 ]; then
