@@ -46,7 +46,6 @@ function trapCleanupTempDir() {
         printf "\nRemove temporary directory %s ... " "${tmp_dir_to_clean}"
         rm -Rf "${tmp_dir_to_clean}" && e_success
     fi
-    find . -name "exiftool_tmp" -exec rm {} \;
     echo;
 }
 trap trapCleanupTempDir EXIT SIGINT
@@ -104,6 +103,15 @@ declare -a mogrify_options_array=()
 # string here. Any option followed by a ':' takes a required argument.
 readonly OPTIONS_LIST="achdvf:m:o:r:w:"
 
+# This will fix missing metadata after dcraw_emu run
+declare -a exiftool_fix_missing_metadata=(
+    "-mwg:Description="""
+    "-mwg:Creator="""
+    "-Artist<mwg:Creator"
+    "-Make<exif:Make"
+    "-Model<exif:model"
+    "-Software<exif:software"
+)
 
 # --------------------------------------
 # DCRAW defaults
@@ -575,21 +583,8 @@ function convertRawPhotos {
         # ---------------------------------------
         # Repair missing metadata
         # ---------------------------------------
-        printf "Transfer meta tags "
-
-        if [ -n $(exiftool -s -s -s -Hallo "${output_tiff}") ]; then
-          echo "Hat schon"
-        else
-          echo "Muss noch"
-        fi
-
-        if exiftool -overwrite_original -quiet \
-        -mwg:Description="" \
-        -mwg:Creator="" \
-        -make="" \
-        -model="" \
-        -software="" \
-        "${output_tiff}"; then
+        printf "Meta tags "
+        if exiftool -overwrite_original -quiet "${exiftool_fix_missing_metadata[@]}" "${output_tiff}"; then
             e_success ""
         else
             e_warning "Fixing meta tags with exiftool failed."
