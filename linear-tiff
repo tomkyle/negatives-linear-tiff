@@ -284,6 +284,7 @@ function countLinesInFile {
     wc -l < "${1}" | sed -e 's/^[ \t]*//'
 }
 
+
 # --------------------------------------
 # catFirstFound
 #
@@ -299,12 +300,10 @@ function catFirstFound {
 
     for dir in "${lookup[@]}"; do
         if [ -f "${dir}/${file_to_cat}" ]; then
-            cat "${dir}/${file_to_cat}"
-            echo;
-            return 0
+            cat "${dir}/${file_to_cat}" && return
         fi;
     done
-    return 1
+    false
 }
 
 
@@ -499,7 +498,7 @@ function convertRawPhotos {
         fi
 
 
-        local input_file_basename input_file_extension xmp_sidecar_file output_tiff rating
+        local input_file_basename input_file_extension xmp_sidecar_file output_tiff rating rating_file
 
         # ---------------------------------------
         # Filename magic
@@ -516,12 +515,14 @@ function convertRawPhotos {
         # ---------------------------------------
         # Star Rating filter
         # ---------------------------------------
-        rating=0
 
+        # Where to get rating from
         [ -f "${xmp_sidecar_file}" ] \
-        && rating="$(exiftool -s -s -s -Rating "${xmp_sidecar_file}")" \
-        || rating="$(exiftool -s -s -s -Rating "${RAW_PHOTO}")"
+        && rating_file="${xmp_sidecar_file}" \
+        || rating_file="${RAW_PHOTO}"
 
+        # Check against threshold
+        rating="$(exiftool -s -s -s -Rating "${rating_file}")"
         if [ "${rating}" -lt "${rating_threshold}" ]; then
           e_info "$(printf '%s not rated enough stars. Ignoring.' "${RAW_PHOTO}")"
           continue;
@@ -645,6 +646,17 @@ function buildDcrawOptions {
 }
 
 
+# ======================================
+#  hasEmbeddedJpeg <input_file>
+#
+#  Check if there is either JpgFromRaw or PreviewImage entry in exif data.
+#  Returns true/0 or false/1 otherwise
+# ======================================
+function hasEmbeddedJpeg {
+    local input_file="${1}"
+    has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw -PreviewImage "${input_file}")"
+    [ -n "${has_embedded_jpg}" ]
+}
 
 
 # ======================================
@@ -674,9 +686,8 @@ function buildMogrifyShaveOptions {
     # Try to calculate thumbnail dimensions from embedded JPG
     thumbnail_width=$output_width
     thumbnail_height=$output_height
-    has_embedded_jpg="$(exiftool -s -s -s -JpgFromRaw -PreviewImage "${input_file}")"
-    if [ -n "${has_embedded_jpg}" ]; then
 
+    hasEmbeddedJpeg "${input_file}" && {
         local temp_thumbnail; temp_thumbnail=$(mktemp -u "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")  || { e_error "Failed to create temp file."; }
         local filetype; filetype="$(exiftool -s -s -s -FileType "${input_file}")"
 
@@ -693,7 +704,8 @@ function buildMogrifyShaveOptions {
 
         thumbnail_width="$(exiftool -s -s -s -ImageWidth "${temp_thumbnail}")"
         thumbnail_height="$(exiftool -s -s -s -ImageHeight "${temp_thumbnail}")"
-    fi;
+    }
+
 
     # Calculate shaving
     shave_horizontal=$(echo "(${output_width} - ${thumbnail_width}) / 2" | bc -l)
@@ -705,7 +717,6 @@ function buildMogrifyShaveOptions {
     fi;
 
 }
-
 
 
 # ======================================
@@ -726,14 +737,16 @@ function buildMogrifyCropOptions {
 
     # 1. Check if crop data is in either work_file or XMP sidecar
     local work_file="${input_file}"
-    local has_crop; has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
+    local has_crop;
 
+    has_crop="$(exiftool -s -s -s -HasCrop "${work_file}")"
     if [ "${has_crop}" != "True" ] && [ -f "${xmp_file}" ]; then
         has_crop="$(exiftool -s -s -s -HasCrop "${xmp_file}")"
         if [ "${has_crop}" = "True" ]; then
             work_file="${xmp_file}"
         fi
     fi
+
 
     # 2. Do calculations
     if [ "${has_crop}" = "True" ]; then
