@@ -21,7 +21,7 @@ before_script:
   - chmod +x ./cc-test-reporter
 
 script:
- - shellcheck linear-tiff
+  - shellcheck linear-tiff
   - bundle exec rspec
   - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT; fi
 
