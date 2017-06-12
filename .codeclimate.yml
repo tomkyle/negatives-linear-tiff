@@ -5,5 +5,6 @@ engines:
   shellcheck:
     enabled: true
 ratings:
-  paths: []
+  paths:
+  - linear-tiff
 exclude_paths: []
