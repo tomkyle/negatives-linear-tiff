@@ -581,7 +581,6 @@ function convertRawPhotos {
         printf "Mangle output file "
         IFS="${DEFAULT_IFS}"
         e_debug "$(printf "\nmogrify %s %s %s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}" "${mogrify_options_array[*]}")"
-        e_success ""
 
         (mogrify "${mogrify_shave_options_array[@]}" "${mogrify_crop_options_array[@]}" "${mogrify_options_array[@]}" "${output_tiff}") || {
             e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
