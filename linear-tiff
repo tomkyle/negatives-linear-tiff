@@ -433,7 +433,8 @@ function convertRawPhotos {
     # --------------------------------------
 
     # Homebrew dependencies
-    require dcraw
+    #require dcraw
+    require dcraw_emu
     require mogrify
     require exiftool
     require color-profiles
@@ -509,7 +510,14 @@ function convertRawPhotos {
 
         # Build output filename as dcraw would do.
         # If using dcraw_emu, the output file has the original extension between.
-        output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
+
+        # DCRAW
+        # output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
+
+        # DCRAW_EMU
+        output_tiff="${input_file_basename}.${input_file_extension}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
+
+        # The XMP sidecar file
         xmp_sidecar_file="${input_file_basename}.${rawfile_sidecar_file_extension}"
 
 
@@ -548,7 +556,7 @@ function convertRawPhotos {
 
         IFS="${DEFAULT_IFS}"
         e_debug "$(printf "\ndcraw %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
-        dcraw "${dcraw_options_array[@]}" "${RAW_PHOTO}" || {
+        dcraw_emu "${dcraw_options_array[@]}" "${RAW_PHOTO}" || {
           e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
           continue
         }
@@ -561,6 +569,18 @@ function convertRawPhotos {
         fi
 
         e_success ""
+
+
+        # ---------------------------------------
+        # Repair missing metadata
+        # ---------------------------------------
+        exiftool -overwrite_original \
+        -mwg:Description="" \
+        -mwg:Creator="" \
+        -make="" \
+        -model="" \
+        -software="" \
+        "${output_tiff}" > /dev/null
 
 
         # ---------------------------------------
