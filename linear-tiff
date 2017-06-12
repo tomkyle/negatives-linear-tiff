@@ -322,15 +322,6 @@ function findFiles {
 
 
 # --------------------------------------
-# displayHelp
-# --------------------------------------
-function displayHelp {
-    catFirstFound "${USAGE_FILE}" || e_error "$(printf "Could not find and display file '%s'\n" "${USAGE_FILE}")"
-    catFirstFound "${CREDITS_FILE}" || e_error "$(printf "Could not find and display file '%s'\n" "${CREDITS_FILE}")"
-}
-
-
-# --------------------------------------
 # _require_argument()
 #
 # Usage:
@@ -1060,7 +1051,8 @@ function main {
     # ---------------------------------------
 
     if [ $print_help -gt 0 ]; then
-        displayHelp
+        catFirstFound "${USAGE_FILE}" || e_error "$(printf "Could not find and display file '%s'\n" "${USAGE_FILE}")"
+        catFirstFound "${CREDITS_FILE}" || e_error "$(printf "Could not find and display file '%s'\n" "${CREDITS_FILE}")"
         exit 1;
     fi;
 
