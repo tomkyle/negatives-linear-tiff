@@ -507,7 +507,8 @@ function convertRawPhotos {
         input_file_basename="${RAW_PHOTO%.$input_file_extension}"
         input_file_basename="${input_file_basename##*/}" # remove trailing slash
 
-        # Build output filename as dcraw would do
+        # Build output filename as dcraw would do.
+        # If using dcraw_emu, the output file has the original extension between.
         output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
         xmp_sidecar_file="${input_file_basename}.${rawfile_sidecar_file_extension}"
 
@@ -567,11 +568,10 @@ function convertRawPhotos {
         # ---------------------------------------
         if [ $crop_output -gt 0 ]; then
             printf "Prepare cropping "
-            buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}"
-            IFS="${DEFAULT_IFS}"
-            e_debug "$(printf "\n%s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}")"
+            buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}" && {
+                e_debug "$(printf "\n%s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}")"
+            }
             e_success ""
-            IFS="${SAFER_IFS}"
         fi
 
 
@@ -746,6 +746,9 @@ function buildMogrifyCropOptions {
         fi
     fi
 
+    if [ "${has_crop}" != "True" ]; then
+        return 1
+    fi
 
     # 2. Do calculations
     if [ "${has_crop}" = "True" ]; then
