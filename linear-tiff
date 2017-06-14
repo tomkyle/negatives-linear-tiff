@@ -101,10 +101,11 @@ declare -a mogrify_shave_options_array=()
 declare -a mogrify_crop_options_array=()
 declare -a mogrify_options_array=()
 
-# List of possible script arguments (getopts)
-# Very much like getopts, expected short options should be appended to the
-# string here. Any option followed by a ':' takes a required argument.
-readonly OPTIONS_LIST="achdvf:m:o:r:w:"
+# This will fix missing metadata after dcraw_emu run
+declare -a exiftool_options_array=(
+    "-overwrite_original"
+    "-quiet"
+)
 
 # This will fix missing metadata after dcraw_emu run
 declare -a exiftool_fix_missing_metadata=(
@@ -115,6 +116,11 @@ declare -a exiftool_fix_missing_metadata=(
     "-Model<exif:model"
     "-Software<exif:software"
 )
+
+# List of possible script arguments (getopts)
+# Very much like getopts, expected short options should be appended to the
+# string here. Any option followed by a ':' takes a required argument.
+readonly OPTIONS_LIST="achdvf:m:o:r:w:"
 
 
 # --------------------------------------
@@ -596,7 +602,10 @@ function convertRawPhotos {
         # Repair missing metadata
         # ---------------------------------------
         printf "Meta tags "
-        if exiftool -overwrite_original -quiet "${exiftool_fix_missing_metadata[@]}" "${output_tiff}"; then
+        if exiftool "${exiftool_options_array[@]}" "${exiftool_fix_missing_metadata[@]}" "${output_tiff}"; then
+            IFS="${DEFAULT_IFS}"
+            e_debug "$(printf "\nexiftool %s %s " "${exiftool_options_array[*]}" "${exiftool_fix_missing_metadata[*]}")"
+            IFS="${SAFER_IFS}"
             e_success ""
         else
             e_warning "Fixing meta tags with exiftool failed."
@@ -609,7 +618,9 @@ function convertRawPhotos {
         if [ $crop_output -gt 0 ]; then
             printf "Prepare cropping "
             buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}" && {
+                IFS="${DEFAULT_IFS}"
                 e_debug "$(printf "\n%s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}")"
+                IFS="${SAFER_IFS}"
             }
             e_success ""
         fi
@@ -723,7 +734,7 @@ function buildMogrifyShaveOptions {
 
     local output_width output_height;
     local has_embedded_jpg thumbnail_width thumbnail_height;
-    local shave_horizontal shave_vertical
+    local shave_horizontal shave_vertical;
 
     # Grab dcraw/dcraw_emu's output image dimensions
     output_width="$(exiftool -s -s -s -ImageWidth "${output_file}")"
@@ -759,6 +770,10 @@ function buildMogrifyShaveOptions {
 
     # Prepare result
     if [ -n "${shave_horizontal}" ] && [ -n "${shave_vertical}" ] ; then
+
+        shave_horizontal=$(LC_ALL=C printf "%.*f\n" 3 "${shave_horizontal}")
+        shave_vertical=$(LC_ALL=C printf "%.*f\n" 3 "${shave_vertical}")
+
         mogrify_shave_options_array+=(-shave "${shave_horizontal}x${shave_vertical}")
     fi;
 
@@ -819,11 +834,18 @@ function buildMogrifyCropOptions {
 
         # Calc remaining width and height, after crop, in percentage.
         width_perc=$(echo "($CropRight - $CropLeft) * 100" | bc -l)
+        width_perc=$(LC_ALL=C printf "%.*f\n" 3 "${width_perc}")
+
         height_perc=$(echo "($CropBottom - $CropTop) * 100" | bc -l)
+        height_perc=$(LC_ALL=C printf "%.*f\n" 3 "${height_perc}")
+
 
         # Calc offsets in pixel
         offset_horizontal=$(echo "$image_width * $CropLeft" | bc -l)
+        offset_horizontal=$(LC_ALL=C printf "%.*f\n" 3 "${offset_horizontal}")
+
         offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
+        offset_vertical=$(LC_ALL=C printf "%.*f\n" 3 "${offset_vertical}")
 
         # 3. Finally, add crop information
         mogrify_crop_options_array+=(-crop "${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}")
