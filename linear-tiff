@@ -469,7 +469,7 @@ function convertRawPhotos {
     #  Build dcraw parameters
     # ---------------------------------------
     buildDcrawOptions
-    if [ $verbous_mode -gt 0 ]; then
+    if [ $verbous_mode -gt 0 ] && [ $debug_mode -eq 0 ]; then
       IFS="${DEFAULT_IFS}"
       echo "Create linear TIFF with:"
       e_verbous "$(printf "dcraw_emu %s\n" "${dcraw_options_array[*]}")"
@@ -481,7 +481,7 @@ function convertRawPhotos {
     #  Build mogrify's options string.
     # ---------------------------------------
     buildMogrifyOptions
-    if [ $verbous_mode -gt 0 ]; then
+    if [ $verbous_mode -gt 0 ] && [ $debug_mode -eq 0 ]; then
       IFS="${DEFAULT_IFS}"
       echo "Mangle dcraw_emu output with:"
       e_verbous "$(printf "mogrify %s\n" "${mogrify_options_array[*]}")"
@@ -501,8 +501,8 @@ function convertRawPhotos {
 
     for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
-        local start_time=$SECONDS
-        local elapsed_time
+        local image_start_time=$SECONDS
+        local image_elapsed_time
         local rawconvert_start_time
         local rawconvert_elapsed_time
 
@@ -651,8 +651,8 @@ function convertRawPhotos {
         # ---------------------------------------
         # Per-image stats
         # ---------------------------------------
-        elapsed_time=$((SECONDS - start_time))
-        e_verbous "$(printf "Elapsed time:    %smin %ssec\n" $((elapsed_time/60)) $((elapsed_time%60)))"
+        image_elapsed_time=$((SECONDS - image_start_time))
+        e_verbous "$(printf "Elapsed time:    %smin %ssec\n" $((image_elapsed_time/60)) $((image_elapsed_time%60)))"
         e_verbous "$(printf "Raw conversion:  %smin %ssec\n" $((rawconvert_elapsed_time/60)) $((rawconvert_elapsed_time%60)))"
     done
 }
