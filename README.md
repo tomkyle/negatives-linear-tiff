@@ -7,10 +7,11 @@
 - **Mirroring** for negatives digitalized on their emulsion side. 
 - **Resizing**  when megapixel power is not everything.
 - **Grayscaling:** B/W lovers save up to 60% disk space. 
+- **Cropping:** According to your Raw converter crop.
 - **ICC profiles:** Output images get a linear gamma profile.  
   No ‘custom gamma colorspace’ in Photoshop!
 
-**What happens inside?** [dcraw](cybercom.net/~dcoffin/dcraw/dcraw.1.html) is used to create linear 16bit TIFF files. [ImageMagick](https://www.imagemagick.org/script/index.php) then does the color-profiling, B/W grayscaling, mirroring, resizing, and ZIP compression. [GNU Parallel](https://www.gnu.org/software/parallel/) uses all CPU cores to speed up the whole thing.
+**What happens inside?** [LibRaw's](https://www.libraw.org) *dcraw_emu* creates a linear 16bit TIFF file from your photographed negative raw file. [ImageMagick's](https://www.imagemagick.org/script/index.php) *mogrify* then does the color-profiling, B/W grayscaling, mirroring, resizing, cropping, and ZIP compression. [GNU Parallel](https://www.gnu.org/software/parallel/) uses all CPU cores to speed up the whole thing.
 
 
 ## Homebrew Installation (MacOS)
@@ -124,12 +125,18 @@ $ linear-tiff -a --resize 2048
 ```
 
 **Fullstack Conversion:**  
-Resized and horizontally mirrored B/W versions of all images go into ‘fullstack’ directory. Verbous output is showing what's going on.
+
+- Create B/W versions of all images.
+- Resize and mirror horizontally.
+- Output goes into ‘fullstack’ directory. 
+- If the raw file has been cropped in e.g. Adobe Camera Raw, the output will be cropped as well. 
+- Skip rejected files.
+- Verbous output is showing what's going on.
 
 ```bash
 # These are equal:
-$ linear-tiff -adv -r 2048 -f flop -o fullstack
-$ linear-tiff --all --resize 2048 --flipflop flop --desaturate --output fullstack --verbous 
+$ linear-tiff -advc -r 2048 -f flop -o fullstack --rating 0
+$ linear-tiff --all --rating 0 --desaturate --crop --resize 2048 --mirror horizontal --output fullstack --verbous
 ```
 
 
