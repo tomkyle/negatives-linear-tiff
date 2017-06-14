@@ -470,10 +470,10 @@ function convertRawPhotos {
     # ---------------------------------------
     buildDcrawOptions
     if [ $verbous_mode -gt 0 ] && [ $debug_mode -eq 0 ]; then
-      IFS="${DEFAULT_IFS}"
       echo "Create linear TIFF with:"
+      IFS="${DEFAULT_IFS}"
       e_verbous "$(printf "dcraw_emu %s\n" "${dcraw_options_array[*]}")"
-      IFS=$"{SAFER_IFS}"
+      IFS="${SAFER_IFS}"
     fi
 
     # ---------------------------------------
@@ -482,10 +482,10 @@ function convertRawPhotos {
     # ---------------------------------------
     buildMogrifyOptions
     if [ $verbous_mode -gt 0 ] && [ $debug_mode -eq 0 ]; then
-      IFS="${DEFAULT_IFS}"
       echo "Mangle dcraw_emu output with:"
+      IFS="${DEFAULT_IFS}"
       e_verbous "$(printf "mogrify %s\n" "${mogrify_options_array[*]}")"
-      IFS=$"{SAFER_IFS}"
+      IFS="${SAFER_IFS}"
     fi
 
 
@@ -574,7 +574,7 @@ function convertRawPhotos {
         printf "Linear TIFF "
 
         IFS="${DEFAULT_IFS}"
-        e_debug "$(printf "\dcraw_emu %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
+        e_debug "$(printf "dcraw_emu %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
         rawconvert_start_time=$SECONDS
         dcraw_emu "${dcraw_options_array[@]}" "${RAW_PHOTO}" || {
           e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
