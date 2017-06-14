@@ -7,7 +7,10 @@
 #  Author: Carsten Witt <tomkyle@posteo.de>
 #  Homepage: <https://github.com/tomkyle/negatives-linear-tiff>
 #
-#  David Coffin's dcraw:
+#  LibRaw
+#  https://www.libraw.org
+#
+#  LibRaw stems from David Coffin's dcraw:
 #  http://cybercom.net/~dcoffin/dcraw/
 #  http://cybercom.net/~dcoffin/dcraw/dcraw.1.html
 #
@@ -81,7 +84,7 @@ declare search_files_iregex='.*\.(nef|raw|cr2)'
 # Global settings:
 # --------------------------------------
 
-# Dcraw output
+# Dcraw / dcraw_emu output
 #
 # Default extension of dcraw's TIFF output
 readonly DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
@@ -98,6 +101,22 @@ declare -a mogrify_shave_options_array=()
 declare -a mogrify_crop_options_array=()
 declare -a mogrify_options_array=()
 
+# This will fix missing metadata after dcraw_emu run
+declare -a exiftool_options_array=(
+    "-overwrite_original"
+    "-quiet"
+)
+
+# This will fix missing metadata after dcraw_emu run
+declare -a exiftool_fix_missing_metadata=(
+    "-mwg:Description="""
+    "-mwg:Creator="""
+    "-Artist<mwg:Creator"
+    "-Make<exif:Make"
+    "-Model<exif:model"
+    "-Software<exif:software"
+)
+
 # List of possible script arguments (getopts)
 # Very much like getopts, expected short options should be appended to the
 # string here. Any option followed by a ':' takes a required argument.
@@ -105,7 +124,7 @@ readonly OPTIONS_LIST="achdvf:m:o:r:w:"
 
 
 # --------------------------------------
-# DCRAW defaults
+# dcraw / dcraw_emu defaults
 # --------------------------------------
 
 # Clip highlights method
@@ -433,7 +452,9 @@ function convertRawPhotos {
     # --------------------------------------
 
     # Homebrew dependencies
-    require dcraw
+    #require dcraw
+    require dcraw_emu
+    require raw-identify
     require mogrify
     require exiftool
     require color-profiles
@@ -454,11 +475,11 @@ function convertRawPhotos {
     #  Build dcraw parameters
     # ---------------------------------------
     buildDcrawOptions
-    if [ $verbous_mode -gt 0 ]; then
-      IFS="${DEFAULT_IFS}"
+    if [ $verbous_mode -gt 0 ] && [ $debug_mode -eq 0 ]; then
       echo "Create linear TIFF with:"
-      e_verbous "$(printf "dcraw %s\n" "${dcraw_options_array[*]}")"
-      IFS=$"{SAFER_IFS}"
+      IFS="${DEFAULT_IFS}"
+      e_verbous "$(printf "dcraw_emu %s\n" "${dcraw_options_array[*]}")"
+      IFS="${SAFER_IFS}"
     fi
 
     # ---------------------------------------
@@ -466,11 +487,11 @@ function convertRawPhotos {
     #  Build mogrify's options string.
     # ---------------------------------------
     buildMogrifyOptions
-    if [ $verbous_mode -gt 0 ]; then
+    if [ $verbous_mode -gt 0 ] && [ $debug_mode -eq 0 ]; then
+      echo "Mangle dcraw_emu output with:"
       IFS="${DEFAULT_IFS}"
-      echo "Mangle dcraw output with:"
       e_verbous "$(printf "mogrify %s\n" "${mogrify_options_array[*]}")"
-      IFS=$"{SAFER_IFS}"
+      IFS="${SAFER_IFS}"
     fi
 
 
@@ -486,6 +507,11 @@ function convertRawPhotos {
 
     for RAW_PHOTO in "${INPUT_FILES[@]}"
     do
+        local image_start_time=$SECONDS
+        local image_elapsed_time
+        local rawconvert_start_time
+        local rawconvert_elapsed_time
+
         # Screen readability hack
         echo;
 
@@ -509,7 +535,14 @@ function convertRawPhotos {
 
         # Build output filename as dcraw would do.
         # If using dcraw_emu, the output file has the original extension between.
-        output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
+
+        # DCRAW
+        # output_tiff="${input_file_basename}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
+
+        # DCRAW_EMU
+        output_tiff="${input_file_basename}.${input_file_extension}.${DCRAW_DEFAULT_OUTPUT_EXTENSION}"
+
+        # The XMP sidecar file
         xmp_sidecar_file="${input_file_basename}.${rawfile_sidecar_file_extension}"
 
 
@@ -533,34 +566,50 @@ function convertRawPhotos {
         # ---------------------------------------
         # Show some image info
         # ---------------------------------------
-        e_info "$(dcraw -i "${RAW_PHOTO}")"
+        e_info "$(raw-identify "${RAW_PHOTO}")"
         [ $verbous_mode -gt 0 ] && {
-          e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
+          e_verbous "$(raw-identify -v "${RAW_PHOTO}")"
           echo;
         }
 
 
 
         # ---------------------------------------
-        # Call dcraw
+        # Call dcraw / dcraw_emu
         # ---------------------------------------
         printf "Linear TIFF "
 
         IFS="${DEFAULT_IFS}"
-        e_debug "$(printf "\ndcraw %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
-        dcraw "${dcraw_options_array[@]}" "${RAW_PHOTO}" || {
+        e_debug "$(printf "\ndcraw_emu %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
+        rawconvert_start_time=$SECONDS
+        dcraw_emu "${dcraw_options_array[@]}" "${RAW_PHOTO}" || {
           e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
           continue
         }
+        rawconvert_elapsed_time=$((SECONDS - rawconvert_start_time))
         IFS="${SAFER_IFS}"
 
-        # Just in case dcraw has NOT written an output file:
+        # Just in case dcraw / dcraw_emu has NOT written an output file:
         if [ ! -f "${output_tiff}" ]; then
-            e_warning "$(printf "Hmmm. Expected dcraw to have written '%s'; In fact, this file does not exist?\n" "${output_tiff}")"
+            e_warning "$(printf "Hmmm. Expected dcraw_emu to have written '%s'; In fact, this file does not exist?\n" "${output_tiff}")"
             continue
         fi
 
         e_success ""
+
+
+        # ---------------------------------------
+        # Repair missing metadata
+        # ---------------------------------------
+        printf "Meta tags "
+        if exiftool "${exiftool_options_array[@]}" "${exiftool_fix_missing_metadata[@]}" "${output_tiff}"; then
+            IFS="${DEFAULT_IFS}"
+            e_debug "$(printf "\nexiftool %s %s " "${exiftool_options_array[*]}" "${exiftool_fix_missing_metadata[*]}")"
+            IFS="${SAFER_IFS}"
+            e_success ""
+        else
+            e_warning "Fixing meta tags with exiftool failed."
+        fi
 
 
         # ---------------------------------------
@@ -569,7 +618,9 @@ function convertRawPhotos {
         if [ $crop_output -gt 0 ]; then
             printf "Prepare cropping "
             buildMogrifyCropOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" "${output_tiff}" && {
+                IFS="${DEFAULT_IFS}"
                 e_debug "$(printf "\n%s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}")"
+                IFS="${SAFER_IFS}"
             }
             e_success ""
         fi
@@ -607,6 +658,13 @@ function convertRawPhotos {
         # ---------------------------------------
         printf "Result %s\n" "$(e_result "${result_file}")"
 
+
+        # ---------------------------------------
+        # Per-image stats
+        # ---------------------------------------
+        image_elapsed_time=$((SECONDS - image_start_time))
+        e_verbous "$(printf "Elapsed time:    %smin %ssec\n" $((image_elapsed_time/60)) $((image_elapsed_time%60)))"
+        e_verbous "$(printf "Raw conversion:  %smin %ssec\n" $((rawconvert_elapsed_time/60)) $((rawconvert_elapsed_time%60)))"
     done
 }
 
@@ -676,9 +734,9 @@ function buildMogrifyShaveOptions {
 
     local output_width output_height;
     local has_embedded_jpg thumbnail_width thumbnail_height;
-    local shave_horizontal shave_vertical
+    local shave_horizontal shave_vertical;
 
-    # Grab dcraw's output image dimensions
+    # Grab dcraw/dcraw_emu's output image dimensions
     output_width="$(exiftool -s -s -s -ImageWidth "${output_file}")"
     output_height="$(exiftool -s -s -s -ImageHeight "${output_file}")"
 
@@ -712,6 +770,10 @@ function buildMogrifyShaveOptions {
 
     # Prepare result
     if [ -n "${shave_horizontal}" ] && [ -n "${shave_vertical}" ] ; then
+
+        shave_horizontal=$(LC_ALL=C printf "%.*f\n" 1 "${shave_horizontal}")
+        shave_vertical=$(LC_ALL=C printf "%.*f\n" 1 "${shave_vertical}")
+
         mogrify_shave_options_array+=(-shave "${shave_horizontal}x${shave_vertical}")
     fi;
 
@@ -772,11 +834,18 @@ function buildMogrifyCropOptions {
 
         # Calc remaining width and height, after crop, in percentage.
         width_perc=$(echo "($CropRight - $CropLeft) * 100" | bc -l)
+        width_perc=$(LC_ALL=C printf "%.*f\n" 1 "${width_perc}")
+
         height_perc=$(echo "($CropBottom - $CropTop) * 100" | bc -l)
+        height_perc=$(LC_ALL=C printf "%.*f\n" 1 "${height_perc}")
+
 
         # Calc offsets in pixel
         offset_horizontal=$(echo "$image_width * $CropLeft" | bc -l)
+        offset_horizontal=$(LC_ALL=C printf "%.*f\n" 1 "${offset_horizontal}")
+
         offset_vertical=$(echo "$image_height * $CropTop" | bc -l)
+        offset_vertical=$(LC_ALL=C printf "%.*f\n" 1 "${offset_vertical}")
 
         # 3. Finally, add crop information
         mogrify_crop_options_array+=(-crop "${width_perc}%x${height_perc}%+${offset_horizontal}+${offset_vertical}")
