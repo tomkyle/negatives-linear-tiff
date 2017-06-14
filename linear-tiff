@@ -7,7 +7,10 @@
 #  Author: Carsten Witt <tomkyle@posteo.de>
 #  Homepage: <https://github.com/tomkyle/negatives-linear-tiff>
 #
-#  David Coffin's dcraw:
+#  LibRaw
+#  https://www.libraw.org
+#
+#  LibRaw stems from David Coffin's dcraw:
 #  http://cybercom.net/~dcoffin/dcraw/
 #  http://cybercom.net/~dcoffin/dcraw/dcraw.1.html
 #
@@ -81,7 +84,7 @@ declare search_files_iregex='.*\.(nef|raw|cr2)'
 # Global settings:
 # --------------------------------------
 
-# Dcraw output
+# Dcraw / dcraw_emu output
 #
 # Default extension of dcraw's TIFF output
 readonly DCRAW_DEFAULT_OUTPUT_EXTENSION="tiff"
@@ -113,8 +116,9 @@ declare -a exiftool_fix_missing_metadata=(
     "-Software<exif:software"
 )
 
+
 # --------------------------------------
-# DCRAW defaults
+# dcraw / dcraw_emu defaults
 # --------------------------------------
 
 # Clip highlights method
@@ -444,6 +448,7 @@ function convertRawPhotos {
     # Homebrew dependencies
     #require dcraw
     require dcraw_emu
+    require raw-identify
     require mogrify
     require exiftool
     require color-profiles
@@ -467,7 +472,7 @@ function convertRawPhotos {
     if [ $verbous_mode -gt 0 ]; then
       IFS="${DEFAULT_IFS}"
       echo "Create linear TIFF with:"
-      e_verbous "$(printf "dcraw %s\n" "${dcraw_options_array[*]}")"
+      e_verbous "$(printf "dcraw_emu %s\n" "${dcraw_options_array[*]}")"
       IFS=$"{SAFER_IFS}"
     fi
 
@@ -478,7 +483,7 @@ function convertRawPhotos {
     buildMogrifyOptions
     if [ $verbous_mode -gt 0 ]; then
       IFS="${DEFAULT_IFS}"
-      echo "Mangle dcraw output with:"
+      echo "Mangle dcraw_emu output with:"
       e_verbous "$(printf "mogrify %s\n" "${mogrify_options_array[*]}")"
       IFS=$"{SAFER_IFS}"
     fi
@@ -555,21 +560,21 @@ function convertRawPhotos {
         # ---------------------------------------
         # Show some image info
         # ---------------------------------------
-        e_info "$(dcraw -i "${RAW_PHOTO}")"
+        e_info "$(raw-identify "${RAW_PHOTO}")"
         [ $verbous_mode -gt 0 ] && {
-          e_verbous "$(dcraw -i -v "${RAW_PHOTO}")"
+          e_verbous "$(raw-identify -v "${RAW_PHOTO}")"
           echo;
         }
 
 
 
         # ---------------------------------------
-        # Call dcraw
+        # Call dcraw / dcraw_emu
         # ---------------------------------------
         printf "Linear TIFF "
 
         IFS="${DEFAULT_IFS}"
-        e_debug "$(printf "\ndcraw %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
+        e_debug "$(printf "\dcraw_emu %s %s " "${dcraw_options_array[*]}" "${RAW_PHOTO}")"
         rawconvert_start_time=$SECONDS
         dcraw_emu "${dcraw_options_array[@]}" "${RAW_PHOTO}" || {
           e_warning "$(printf "Could not create linear tiff: %s" "${RAW_PHOTO}")"
@@ -578,9 +583,9 @@ function convertRawPhotos {
         rawconvert_elapsed_time=$((SECONDS - rawconvert_start_time))
         IFS="${SAFER_IFS}"
 
-        # Just in case dcraw has NOT written an output file:
+        # Just in case dcraw / dcraw_emu has NOT written an output file:
         if [ ! -f "${output_tiff}" ]; then
-            e_warning "$(printf "Hmmm. Expected dcraw to have written '%s'; In fact, this file does not exist?\n" "${output_tiff}")"
+            e_warning "$(printf "Hmmm. Expected dcraw_emu to have written '%s'; In fact, this file does not exist?\n" "${output_tiff}")"
             continue
         fi
 
@@ -720,7 +725,7 @@ function buildMogrifyShaveOptions {
     local has_embedded_jpg thumbnail_width thumbnail_height;
     local shave_horizontal shave_vertical
 
-    # Grab dcraw's output image dimensions
+    # Grab dcraw/dcraw_emu's output image dimensions
     output_width="$(exiftool -s -s -s -ImageWidth "${output_file}")"
     output_height="$(exiftool -s -s -s -ImageHeight "${output_file}")"
 
