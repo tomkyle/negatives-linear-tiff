@@ -955,6 +955,9 @@ function buildMogrifyOrientationOptions {
     orient="$(exiftool -s -s -s -n -Orientation "${work_file}")"
 
     case "${orient}" in
+        1)
+            # Just normal orientation
+            ;;
         6)
             mogrify_orientation_options_array+=(-rotate "90")
             ;;
