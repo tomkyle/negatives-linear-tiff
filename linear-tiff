@@ -98,6 +98,7 @@ declare -a dcraw_options_array=()
 
 # Parameters for calling mogrify.
 declare -a mogrify_shave_options_array=()
+declare -a mogrify_orientation_options_array=()
 declare -a mogrify_crop_options_array=()
 declare -a mogrify_options_array=()
 
@@ -219,9 +220,9 @@ declare -i crop_output=0
 declare -i rating_threshold=-1
 
 # Output orientation:
-# * -1: Disable
-# *  0: Automatically orientate image, depending on EXIF values
-declare -i output_orientation=-1
+# * 0:  Disable
+# * 1:  Automatically orientate image, depending on EXIF values
+declare -i output_orientation=0
 
 
 
@@ -631,15 +632,28 @@ function convertRawPhotos {
             e_success ""
         fi
 
+        # ---------------------------------------
+        # Consider image orientation settings
+        # ---------------------------------------
+        if [ $output_orientation -gt 0 ]; then
+            printf "Prepare orientation "
+            buildMogrifyOrientationOptions "${RAW_PHOTO}" "${xmp_sidecar_file}" && {
+                IFS="${DEFAULT_IFS}"
+                e_debug "$(printf "\n%s " "${mogrify_orientation_options_array[*]}" )"
+                IFS="${SAFER_IFS}"
+            }
+            e_success ""
+        fi
+
 
         # ---------------------------------------
         #  Handle output file
         # ---------------------------------------
         printf "Mangle output file "
         IFS="${DEFAULT_IFS}"
-        e_debug "$(printf "\nmogrify %s %s %s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}" "${mogrify_options_array[*]}")"
+        e_debug "$(printf "\nmogrify %s %s %s %s " "${mogrify_shave_options_array[*]}" "${mogrify_crop_options_array[*]}" "${mogrify_orientation_options_array[*]}" "${mogrify_options_array[*]}")"
 
-        (mogrify "${mogrify_shave_options_array[@]}" "${mogrify_crop_options_array[@]}" "${mogrify_options_array[@]}" "${output_tiff}") || {
+        (mogrify "${mogrify_shave_options_array[@]}" "${mogrify_crop_options_array[@]}" "${mogrify_orientation_options_array[@]}" "${mogrify_options_array[@]}" "${output_tiff}") || {
             e_warning "$(printf "Hmmm. Mogrifying failed somehow on %s\n" "${output_tiff}")"
             continue
         }
@@ -921,16 +935,34 @@ function buildMogrifyFlipFlopOptions {
 
 # ======================================
 #  buildMogrifyOrientationOptions
-#    Usage: buildMogrifyOrientationOptions [option]
+#    Usage: buildMogrifyOrientationOptions <input_file> <xmp_sidecar>
 # ======================================
 function buildMogrifyOrientationOptions {
 
     # Requirements
-    local orient_output="${1:-}"; shift;
+    local input_file="${1}"
+    local xmp_file="${2}"
 
-    case "${orient_output}" in
-        auto|on)
-            mogrify_options_array+=(-rotate "90")
+    local orient work_file;
+
+    # Where to read orientation from.
+    # XMP overrides original RAW.
+    [ -f "${xmp_file}" ] \
+    && work_file="${xmp_file}" \
+    || work_file="${input_file}"
+
+    # Grab orientation from meta data
+    orient="$(exiftool -s -s -s -n -Orientation "${work_file}")"
+
+    case "${orient}" in
+        6)
+            mogrify_orientation_options_array+=(-rotate "90")
+            ;;
+        3)
+            mogrify_orientation_options_array+=(-rotate "180")
+            ;;
+        8)
+            mogrify_orientation_options_array+=(-rotate "270")
             ;;
         *)
             ;;
@@ -960,9 +992,6 @@ function buildMogrifyResizeOptions {
 #  for mangling the dcraw output image
 # ======================================
 function buildMogrifyOptions {
-
-    # Image Orientation, if required.
-    buildMogrifyOrientationOptions "${output_orientation}"
 
     # Flip or flop the image, if required.
     buildMogrifyFlipFlopOptions "${mirror_output}"
@@ -1125,12 +1154,9 @@ function main {
                 shift
                 ;;
 
-
             --orientation)
-                _require_argument "${__option}" "${__maybe_param}"
-                output_orientation=${__maybe_param}
-                recursion_arguments_array+=(${__option} ${__maybe_param})
-                shift
+                output_orientation=1
+                recursion_arguments_array+=(${__option})
                 ;;
 
             --rating)
