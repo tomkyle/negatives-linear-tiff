@@ -8,10 +8,11 @@
 - **Resizing**  when megapixel power is not everything.
 - **Grayscaling:** B/W lovers save up to 60% disk space. 
 - **Cropping:** According to your Raw converter crop.
+- **Orientation:** According to your custom image rotation in Raw converter.
 - **ICC profiles:** Output images get a linear gamma profile.  
   No ‘custom gamma colorspace’ in Photoshop!
 
-**What happens inside?** [LibRaw's](https://www.libraw.org) *dcraw_emu* creates a linear 16bit TIFF file from your photographed negative raw file. [ImageMagick's](https://www.imagemagick.org/script/index.php) *mogrify* then does the color-profiling, B/W grayscaling, mirroring, resizing, cropping, and ZIP compression. [GNU Parallel](https://www.gnu.org/software/parallel/) uses all CPU cores to speed up the whole thing.
+**What happens inside?** [LibRaw's](https://www.libraw.org) *dcraw_emu* creates a linear 16bit TIFF file from your photographed negative raw file. [ImageMagick's](https://www.imagemagick.org/script/index.php) *mogrify* then does the color-profiling, B/W grayscaling, mirroring, resizing, cropping, orientation, and ZIP compression. [GNU Parallel](https://www.gnu.org/software/parallel/) uses all CPU cores to speed up the whole thing.
 
 
 ## Homebrew Installation (MacOS)
@@ -63,6 +64,10 @@ Mirror the image vertically and/or horizontally. Possible values are `horizontal
 
 #### -h, --help
 Display help text
+
+#### --orientation
+Enable image rotation. Rotate your RAW files before running *linear-tiff* with your Raw Converter. “Orientation” metadata given in XMP file
+overrides any according RAW file entry.
 
 #### -o, --output *path*  
 Output directory — default is current working directory. Example: `-o results`
@@ -143,8 +148,13 @@ $ linear-tiff --all --rating 0 --desaturate --crop --resize 2048 --mirror horizo
 # Changelog
 
 ## New Features
+
+### v.1.1.6
+- **Orientation:** Once you have copied your RAW files to your HDD, you will like to rotate any upright/portrait images. *linear-tiff* will consider this orientation meta data. Just turn it on with option `--orientation`. 
+- **Faster conversion:** [LibRaw's](https://www.libraw.org) *dcraw_emu* is now used to extract the linear data. It is a whole lot faster than the original *dcraw*.
+
 ### v1.1.4
-- **Star rating filter:** Photo managers like Adobe Camrea Raw let their users reject bad images or rate better ones with ‘stars’. This release introduces a new CLI option `--rating` that requires a minimum star rating. 
+- **Star rating filter:** Photo managers like Adobe Camera Raw let their users reject bad images or rate better ones with ‘stars’. This release introduces a new CLI option `--rating` that requires a minimum star rating. 
 
 ### v1.1.2
 - **Crop output file:** The output file is now cropped when the input file's meta data have crop information stored, even in an XMP sidecar file. 
@@ -175,6 +185,8 @@ These features go into the current major version 1:
 - **The *-f* option will be renamed to *-m*,** as the actually performed image action is *mirroring horizontally or vertically*. The option values *flip, flop* and *flipflop* will then become something like *V*, *H* or *VH*.
 
 - **New batch mode trigger:** New sub-command `all` will replace the current `-a` flag, like so: `linear-tiff batch <options>`. 
+
+- **Orientation:** This option will be enabled per default.
 
 
                               
