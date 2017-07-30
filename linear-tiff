@@ -218,6 +218,12 @@ declare -i crop_output=0
 # To omit rejected images, call script with "--rating 0"
 declare -i rating_threshold=-1
 
+# Output orientation:
+# * -1: Disable
+# *  0: Automatically orientate image, depending on EXIF values
+declare -i output_orientation=-1
+
+
 
 # --------------------------------------
 # Miscellaneous
@@ -1097,6 +1103,15 @@ function main {
                 recursion_arguments_array+=(${__option} "${__maybe_param}")
                 shift
                 ;;
+
+
+            --orientation)
+                _require_argument "${__option}" "${__maybe_param}"
+                output_orientation=${__maybe_param}
+                recursion_arguments_array+=(${__option} ${__maybe_param})
+                shift
+                ;;
+
             --rating)
                 _require_argument "${__option}" "${__maybe_param}"
                 rating_threshold=${__maybe_param}
