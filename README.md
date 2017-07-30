@@ -148,6 +148,11 @@ $ linear-tiff --all --rating 0 --desaturate --crop --resize 2048 --mirror horizo
 # Changelog
 
 ## New Features
+
+### v.1.1.6
+- **Orientation:** Once you have copied your RAW files to your HDD, you will like to rotate any upright/portrait images. *linear-tiff* will consider this orientation meta data. Just turn it on with option `--orientation`. 
+- **Faster conversion:** [LibRaw's](https://www.libraw.org) *dcraw_emu* is now used to extract the linear data. It is a whole lot faster than the original *dcraw*.
+
 ### v1.1.4
 - **Star rating filter:** Photo managers like Adobe Camrea Raw let their users reject bad images or rate better ones with ‘stars’. This release introduces a new CLI option `--rating` that requires a minimum star rating. 
 
