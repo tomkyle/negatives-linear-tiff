@@ -920,6 +920,25 @@ function buildMogrifyFlipFlopOptions {
 
 
 # ======================================
+#  buildMogrifyOrientationOptions
+#    Usage: buildMogrifyOrientationOptions [option]
+# ======================================
+function buildMogrifyOrientationOptions {
+
+    # Requirements
+    local orient_output="${1:-}"; shift;
+
+    case "${orient_output}" in
+        auto|on)
+            mogrify_options_array+=(-rotate "90")
+            ;;
+        *)
+            ;;
+    esac
+}
+
+
+# ======================================
 #  buildMogrifyResizeOptions
 #    Usage: buildMogrifyResizeOptions <size>
 # ======================================
@@ -942,12 +961,14 @@ function buildMogrifyResizeOptions {
 # ======================================
 function buildMogrifyOptions {
 
+    # Image Orientation, if required.
+    buildMogrifyOrientationOptions "${output_orientation}"
+
     # Flip or flop the image, if required.
     buildMogrifyFlipFlopOptions "${mirror_output}"
 
     # Resize image on its larger side
     buildMogrifyResizeOptions "${resize_width}"
-
 
     # Build "-profile" options
     buildMogrifyProfileOptions "${desaturate_colors}"
