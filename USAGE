@@ -43,6 +43,10 @@ OPTIONS:
 
 -h, --help    Display this help text
 
+--orientation
+              Automatically rotate the image output according to the
+              orientation set with your Raw converter.
+
 -o, --output path
               Output directory. Defaults to current working dir.
 
