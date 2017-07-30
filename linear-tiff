@@ -641,8 +641,8 @@ function convertRawPhotos {
                 IFS="${DEFAULT_IFS}"
                 e_debug "$(printf "\n%s " "${mogrify_orientation_options_array[*]}" )"
                 IFS="${SAFER_IFS}"
+                e_success ""
             }
-            e_success ""
         fi
 
 
@@ -965,6 +965,8 @@ function buildMogrifyOrientationOptions {
             mogrify_orientation_options_array+=(-rotate "270")
             ;;
         *)
+            e_warning "$(printf 'Unexpected orientation value %s found in %s. Ignoring.' "${orient}" "${work_file}")"
+            return 1
             ;;
     esac
 }
